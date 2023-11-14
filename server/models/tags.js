@@ -6,7 +6,7 @@ var TagSchema = new Schema({
 })
 
 TagSchema.virtual('url').get(function(){
-    return 'posts/tags/' + this.id;
+    return 'posts/tags/_id' + this.id;
 })
 
 module.exports = mongoose.model('Tags', TagSchema);

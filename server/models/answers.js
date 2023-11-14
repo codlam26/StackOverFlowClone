@@ -4,11 +4,11 @@ var Schema = mongoose.Schema;
 var AnswerSchema = new Schema({
     text: {type: String, required:[true, "Please Enter a Text"]},
     ans_by: {type: String, required:true},
-    ans_date: {type: Date}
+    ans_date_time: {type: Date, default: Date.now}
 })
 
 AnswerSchema.virtual('url').get(function(){
-    return 'posts/answer/' + this.id;
+    return 'posts/answer/_id' + this.id;
 })
 
 
