@@ -1,59 +1,66 @@
-import React, {useState} from "react";
-import Model from "../models/model";
+import React, {useState, useEffect} from 'react'
+import axios from 'axios';
 
-const model = new Model;
-function formatQuestionDate(askDate){
+function formatQuestionDate(askDate2){
     const months = ['January' , 'February', 'March', 'April', 'May', 'June',
          'July', 'August', 'September', 'October', 'November', 'December'];
-        const currentDate = new Date();
-        
-        const SecDiff = currentDate.getSeconds() - askDate.getSeconds();
-        const MinDiff = currentDate.getMinutes() - askDate.getMinutes();
-        const HourDiff = askDate.getHours()  - currentDate.getHours();
+         const currentDate = new Date();
+         const askDate = new Date(askDate2);
+       
+         const timeDifference = Math.floor((currentDate - askDate) / 1000);
+       
+         if (timeDifference < 60) {
+           return `${timeDifference} second${timeDifference > 1 ? 's' : ''} ago`;
+         } 
+         else if (timeDifference < 3600) {
+           const minutes = Math.floor(timeDifference / 60);
+           return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+         } 
+         else if (timeDifference < (3600 * 24)) {
+           const hours = Math.floor(timeDifference / 3600);
+           return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+         } 
+         else if (timeDifference < (3600 * 24 * 60)) {
+           const day = askDate.getDate();
+           const hours = askDate.getHours().toString().padStart(2, '0');
+           const minutes = askDate.getMinutes().toString().padStart(2, '0');
+           return `on ${months[askDate.getMonth()]} ${day} at ${hours}:${minutes}`;
+         } else {
+           const year = askDate.getFullYear();
+           const month = months[askDate.getMonth()];
+           const day = askDate.getDate();
+           const hours = askDate.getHours().toString().padStart(2, '0');
+           const minutes = askDate.getMinutes().toString().padStart(2, '0');
+           return `${month} ${day}, ${year} at ${hours}:${minutes}`;
+         }
+       }
+
+function AnswerList({updatePage, question_id}){
+    const [answers, setAnswers] = useState([]);
+    const [question, setquestion] = useState([]);
+
+    useEffect(()=>{
+        axios.get(`http://localhost:8000/api/answers/${question_id}`).then((res) => {
+            setAnswers(res.data);
+        });
+    }, [question_id])
+
+    useEffect(()=>{
+        axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
+            setquestion(res.data);
+        });
+    }, [question_id])
+
+    const renderTextWithHyperlinks = (text) => {
+        return text.split(/(\[.*?\]\(.*?\))/g).map((part, index) => {
+            const match = /\[([^\]]+)]\((https?:\/\/[^)]+)\)/.exec(part);
+            return match ? <a key={index} href={match[2]} target="_blank" rel="noopener noreferrer">{match[1]}</a> : part;
+        });
+    };
     
-        if(MinDiff <= 0 && currentDate.getDate() === askDate.getDate()
-        && askDate.getFullYear() === currentDate.getFullYear() && askDate.getMonth() === currentDate.getMonth()){
-          return  `${SecDiff} secs ago`;
-        }
-        else if(HourDiff <= 0 && currentDate.getDate() === askDate.getDate()
-        && askDate.getFullYear() === currentDate.getFullYear() && askDate.getMonth() === currentDate.getMonth()){
-          return `${MinDiff} mins ago`
-        }
-        else if(HourDiff < 24 && askDate.getFullYear() === currentDate.getFullYear() && askDate.getMonth() === currentDate.getMonth()){
-          return `${HourDiff} hours ago`
-        }
-        else if(HourDiff > 24 ){
-          const month = months[askDate.getMonth()];
-          const day = askDate.getDate();
-          var hours = askDate.getHours();
-          var min = askDate.getMinutes();
-          if(min < 10){
-            min = '0' + min;
-          }
-          if(hours < 10){
-            hours = '0' + hours;
-          }
-          return `${month} ${day} at ${hours}:${min}`
-        }
-        
-        else{
-          const year = askDate.getFullYear();
-          const month = months[askDate.getMonth()];
-          const day = askDate.getDate();
-          var hours2 = askDate.getHours();
-          var min2 = askDate.getMinutes();
-          if(min2 < 10){
-            min2 = '0' + min2;
-          }
-          if(hours2 < 10){
-            hours2 = '0' + hours2;
-          }
-          return `${month} ${day}, ${year} at ${hours2}:${min2}`
-        }
-}
-function AnswerList({question, answers, displayForm, onAskQuestion}){
     return(
-        <div className="answer-list" style={{display: displayForm ? 'block' : 'none'}}>
+        
+        <div className="answer-list">
             <div className ="answerHeader">
                 <div className="flex-container">
                     <div className="right-column2"></div>
@@ -65,7 +72,7 @@ function AnswerList({question, answers, displayForm, onAskQuestion}){
                 </div>
 
                 <div className="left-column2">
-                    <button id="askQuestionButtonForm" onClick={() => onAskQuestion('questionForm')}>Ask Question</button>
+                    <button id="askQuestionButtonForm" onClick = {() => {updatePage("questionForm", question_id)}}>Ask Question</button>
                 </div>
                 </div>
             
@@ -76,38 +83,38 @@ function AnswerList({question, answers, displayForm, onAskQuestion}){
                 </div>
 
                 <div className="middle-column">
-                    <div><p>{question.text}</p></div>
+                    <div><p> {question && question.text ? renderTextWithHyperlinks(question.text) : null}</p></div>
                 </div>
 
                 <div className="right-column2">
                     <div className="question_metadata">
                         <span className="askedBy">
-                            {question.askedBy}
-                        </span> asked {formatQuestionDate(question.askDate)}
+                            {question.asked_by}
+                        </span> asked {formatQuestionDate(question.ask_date_time)}
                     </div>
                 </div>
             </div>
             </div>
-            {console.log(answers)}
+            
             {answers.map((answerEntry) => (
                 <div key={answerEntry.aid} className="answer-entry">
                     <div className="middle-column">
                         <div>
-                            {answerEntry.text}
+                            {renderTextWithHyperlinks(answerEntry.text)}
                         </div>
                     </div>
 
                     <div className="right-column2">
                         <div className="question_metadata">
                             <span className="answeredBy">
-                                {answerEntry.ansBy}
-                            </span> answered {formatQuestionDate(answerEntry.ansDate)}
+                                {answerEntry.ans_by}
+                            </span> answered {formatQuestionDate(answerEntry.ans_date_time)}
                         </div>
                     </div>
                 </div>
             ))}
             
-            <button id="answerQuestionButton" onClick={() => {onAskQuestion("answerForm", question)}}>Answer Question</button>
+            <button id="answerQuestionButton" onClick = {() => {updatePage("answerForm", question_id)}}>Answer Question</button>
         </div>
     );
 }
