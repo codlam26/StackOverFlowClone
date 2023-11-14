@@ -7,238 +7,261 @@
     top:0;
   }
   
-  .header{
-    text-align: center;
-    background-color: lightgray;
-    padding: 2px;
-    border-bottom-style: solid;
-  }
+.header{
+  text-align: center;
+  background-color: lightgray;
+  padding: 2px;
+  border-bottom-style: solid;
+}
+
+.header input[type=text]{
+  float: right;
+  padding: 6px;
+  margin-top: 20px;
+  margin-right:5px;
+  font-size: 15px
+}
+
+.main{
+  margin: 0px;
+  width:100%;
+  height:100%;;
+}
+
+.column-left{
+  width:15%;
+  height:100%;
+  border-style: dotted;
+  border-left: none;
+  border-bottom: none;
+  border-top: none;
+}
+
+.column-right{
+  display:block;
+  width:100%;
+  height: 100%;
+  margin: 0;
   
-  .header input[type=text]{
-    float: right;
-    padding: 6px;
-    margin-top: 20px;
-    margin-right:5px;
-    font-size: 15px
-  }
+}
+
+#questionsLink, #tagsLink{
+  display: inline-block;
+  font-size: 20px;
+  color: blue;
+  text-decoration: none;
+  border: none;
+  color: blue;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.flex-container{
+  display: flex;
+  height: auto;
+  padding: 10px 10px;
+  justify-content: space-between;
+  align-items:center;
+}
+a:active, .activeLink{
+  display:block;
+  padding-top:5px;
+  padding-bottom:5px;
+  background-color: lightgray;
+  border-radius: 10px;
+}
+
+.activeButton2{
+  font-size: 12px;
+  border-right: none;
+  padding: 4px 10px;
+  cursor: pointer;
+  background-color: lightgray;
+}
+
+.noneActiveButton{
+  background-color: white;
+  font-size: 12px;
+  border-right: none;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.sortingButtons{
+  display: inline-flex;
+  float: right;
+  margin-right: 150px;
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+.activeunansweredButton{
+  border: solid 2px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  background-color: lightgray;
+}
+
+.unactiveunansweredButton{
+  border-right: solid 2px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  background-color: white;
+}
+
+
+#askQuestionButton , #postQuestion, #answerQuestionButton, #postAnswer, #askQuestionButtonForm,#askQuestionButtonTag {
+  font-size: 20px;
+  background-color: rgb(0, 157, 255);
+  color: white;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-right: 50px;
+  margin-top: 20px;
+  cursor: pointer;
+}
+.question-list{
+  border-top: dotted;
+  border-bottom: none;
+  border-right: none;
+  border-left: none;
+}
+
+#noQuestions{
+  border-top:none;
+}
+
+.noQuestionsHeading{
+  padding: 30px 30px;
+}
+
+.answer-list{
+  margin: 0;
+}
+.right-column2, .left-column2{
+  flex:1/2;
+}
+
+.middle-column{
+  flex:5;
+  margin: 0 20px;
+}
+
+.question-entry, .answer-entry{
+  display:flex;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: dotted;
+  align-items:center;
+  padding:40px 40px;
+}
+
+.askedBy, .mandatoryField{
+  color:red;
+}
+
+.answeredBy{
+  color: green;
+}
+
+.question{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  padding: 10px;
+}
+
+.question_metadata, .question_stats{
+  color: gray;
+}
+
+.question_title{
+  color: blue;
+  font-size: 20px;
+  padding:20px 10px;
+  cursor: pointer;
+}
+
+.tag{
+  color:white;
+  background-color:dimgrey;
+  border-radius: 10px;
+  border-style:solid;
+  border-width: 2px;
+  border-color:black;
+  padding: 5px 5px;
+}
+
+label{
+  padding-left: 10px;
+  font-size: 25px;
+}
+
+#questionTitle,#tags,#username,#questionText,#answerText,#answerUsername{
+  font-size: 25px;
+}
+
+.questionReq{
+  padding-left: 15px;
+  font-style: italic;
+}
+
+#question-form{
+  width:85%;
+  text-align: left;
+}
+
+.answerText{
+  padding-left: 120px;
+  padding-right: 20px;
+}
+
+.tagBox{
+  border-style: dashed;
+  font-size: 20px;
+  padding: 20px;
+  width: 25%;
+  text-align: center;
+  margin: 10px;
+  margin-bottom: 30px;
+}
+.tagBox a{
+  color:blue;
   
-  .main{
-    margin: 0px;
-    width:100%;
-    height:100%;;
-  }
-  
-  .column-left{
-    width:15%;
-    height:100%;
-    border-style: dotted;
-    border-left: none;
-    border-bottom: none;
-    border-top: none;
-  }
-  
-  .column-right{
-    display:block;
-    width:100%;
-    height: 100%;
-    margin: 0;
-    
-  }
-  
-  #questionsLink, #tagsLink{
-    font-size: 20px;
-    color: blue;
-    text-decoration: none;
-  }
-  
-  .flex-container{
-    display: flex;
-    height: auto;
-    padding: 10px 10px;
-    justify-content: space-between;
-    align-items:center;
-  }
-  a:active, .activeLink{
-    display:block;
-    padding-top:5px;
-    padding-bottom:5px;
-    background-color: lightgray;
-    border-radius: 10px;
-  }
-  
-  .activeButton2{
-    font-size: 12px;
-    border-right: none;
-    padding: 4px 10px;
-    cursor: pointer;
-    background-color: lightgray;
-  }
-  
-  .noneActiveButton{
-    background-color: white;
-    font-size: 12px;
-    border-right: none;
-    padding: 4px 10px;
-    cursor: pointer;
-  }
-  
-  .sortingButtons{
-    display: inline-flex;
-    float: right;
-    margin-right: 150px;
-    margin-top: 30px;
-    margin-bottom: 10px;
-  }
-  
-  .activeunansweredButton{
-    border: solid 2px;
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-    background-color: lightgray;
-  }
-  
-  .unactiveunansweredButton{
-    border-right: solid 2px;
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-    background-color: white;
-  }
-  
-  
-  #askQuestionButton , #postQuestion, #answerQuestionButton, #postAnswer, #askQuestionButtonForm,#askQuestionButtonTag {
-    font-size: 20px;
-    background-color: rgb(0, 157, 255);
-    color: white;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    margin-right: 50px;
-    margin-top: 20px;
-    cursor: pointer;
-  }
-  .question-list{
-    border-top: dotted;
-    border-bottom: none;
-    border-right: none;
-    border-left: none;
-  }
-  
-  #noQuestions{
-    border-top:none;
-  }
-  
-  .noQuestionsHeading{
-    padding: 30px 30px;
-  }
-  
-  .answer-list{
-    margin: 0;
-  }
-  .right-column2, .left-column2{
-    flex:1/2;
-  }
-  
-  .middle-column{
-    flex:5;
-    margin: 0 20px;
-  }
-  
-  .question-entry, .answer-entry{
-    display:flex;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    border-bottom: dotted;
-    align-items:center;
-    padding:40px 40px;
-  }
-  
-  .answersLink{
-    text-decoration: none;
-    color: blue;
-  }
-  
-  .askedBy, .mandatoryField{
-    color:red;
-  }
-  
-  .answeredBy{
-    color: green;
-  }
-  
-  .question{
-    display:flex;
-    justify-content: space-between;
-    align-items:center;
-    padding: 10px;
-  }
-  
-  .question_metadata, .question_stats{
-    color: gray;
-  }
-  
-  .question_title{
-    color: blue;
-    font-size: 20px;
-    padding:20px 10px;
-    cursor: pointer;
-  }
-  
-  .tag{
-    color:white;
-    background-color:dimgrey;
-    border-radius: 10px;
-    border-style:solid;
-    border-width: 2px;
-    border-color:black;
-    padding: 5px 5px;
-  }
-  
-  label{
-    padding-left: 10px;
-    font-size: 25px;
-  }
-  
-  #questionTitle,#tags,#username,#questionText,#answerText,#answerUsername{
-    font-size: 25px;
-  }
-  
-  .questionReq{
-    padding-left: 15px;
-    font-style: italic;
-  }
-  
-  #question-form{
-    width:85%;
-    text-align: left;
-  }
-  
-  .answerText{
-    padding-left: 120px;
-    padding-right: 20px;
-  }
-  
-  .tagBox{
-    border-style: dashed;
-    font-size: 20px;
-    padding: 20px;
-    width: 25%;
-    text-align: center;
-    margin: 10px;
-    margin-bottom: 30px;
-  }
-  .tagBox a{
-    color:blue;
-    
-  }
-  .tag-container{
-    display:flex;
-    flex-wrap: wrap;
-    margin: 0 auto;
-  }
-  
-  .answerHeader{
-    border-bottom: dotted;
-    margin:0px;
-  }
+}
+.tag-container{
+  display:flex;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+
+.answerHeader{
+  border-bottom: dotted;
+  margin:0px;
+}
+.error-Message{
+  color: red;
+}
+.link-style-button {
+  background: none;
+  border: none;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 1em;
+  font-family: inherit;
+}
+
+.answersLink{
+  text-decoration: none;
+  background: none;
+  border: none;
+  text-align: left;
+  color: blue;
+  cursor: pointer;
+  font-size: 1em;
+  font-family: inherit;
+}
