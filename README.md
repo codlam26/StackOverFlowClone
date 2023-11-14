@@ -12,3 +12,11 @@ Cody Lam -
 -Created the Question Form and wrote the server.js code (askQuestion endpoint)(client/server)
 -Displaying the questions that correlates with the search bar and wrote the server.js code (searched endpoint)(client/server)
 ## Team Member 2 Contribution
+Shashwat Panigrahi
+- Created all the GET/POST methods for server.js for the 
+   + Answer Page
+   + Question Page
+   + Tags Page
+- Tested all of these methods in the backend
+- Assisted my partner in any issues related to connecting to the client side
+
