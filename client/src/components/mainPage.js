@@ -6,13 +6,26 @@ import SearchBar from "./searchbar"
 import QuestionForm from "./questionForm";
 import AnswerForm from "./answerForm";
 import axios from "axios";
+import WelcomePage from "./Welcome";
 
-function MainPage(){
+function MainPage({ isAuthenticated, user}){
     const [currentView, setCurrentView] = useState('questionList');
     const [activeLink, setActiveLink] = useState('questions');
     const [questionID, setquestionID] = useState([]);
     const [questions, setQuestions] = useState([]);
+    const [redirectWelcome, setRedirectWelcome] = useState(false);
+    
 
+
+    const handleSignUp = () => {
+      setRedirectWelcome(true)
+    }
+
+    const handleLogOut = () => {
+
+      setRedirectWelcome(true)
+    }
+    
     const navigateTo = (view) => {
         setCurrentView(view);
     }
@@ -29,27 +42,61 @@ function MainPage(){
         setActiveLink("questions");
     }
 
-      const fetchNewestQuestions = async () => {
-        try {
-          const response = await axios.get('http://localhost:8000/questions/newest');
-          setQuestions(response.data);
-          setCurrentView('questionList');
-          setActiveLink('questions');
-        } catch (error) {
-          console.error(error);
-        }
-      };
+    const fetchNewestQuestions = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/questions/newest');
+        setQuestions(response.data);
+        setCurrentView('questionList');
+        setActiveLink('questions');
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-      useEffect(() => {
-        fetchNewestQuestions();
-      }, []);
+    useEffect(() => {
+      fetchNewestQuestions();
+    }, []);
 
+    if(redirectWelcome){
+      return <WelcomePage/>;
+    } 
     return(
         <div className='page'>
       <div className="header">
         <SearchBar updatePage = {updateQuestionsView}/>
-        <span>
-          <h1> FakeStackOverflow </h1>
+        <span style={{ display: 'flex', alignItems: 'center' , marginLeft: '50px'}}>
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogOut}
+              style={{
+                backgroundColor: 'rgb(0, 157, 255)',
+                color: 'white',
+                borderRadius: '10px',
+                padding: '10px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginRight: '10px', 
+              }}
+            >
+              Log Out
+            </button>
+          ) : (
+            <button
+              onClick={handleSignUp}
+              style={{
+                backgroundColor: 'rgb(0, 157, 255)',
+                color: 'white',
+                borderRadius: '10px',
+                padding: '10px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginRight: '10px', 
+              }}
+            >
+              Sign Up
+            </button>
+          )}
+          <h1 style={{ marginLeft: '100px' }}> FakeStackOverflow </h1>
         </span>
       </div>
 
@@ -72,7 +119,7 @@ function MainPage(){
 
             <td className="column-right">
                 {currentView === 'questionList' &&
-                    <QuestionList Questions = {questions} updatePage={updateQuestionsView} answerPage={updateCurrentView}/>
+                    <QuestionList Questions = {questions} updatePage={updateQuestionsView} answerPage={updateCurrentView} isAuthQ={isAuthenticated}/>
                 }
                 {currentView === 'answerList' &&
                     <AnswerList updatePage = {updateCurrentView} question_id={questionID}/>}

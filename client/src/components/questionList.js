@@ -36,11 +36,14 @@ function formatQuestionDate(askDate2){
          }
        }
 
-function QuestionList({Questions, updatePage, answerPage}){
+function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
     const [activeButton, setActiveButton] = useState('');
     const [tags, setTags] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [votes, setVotes] = useState({});
+    const questionsPerPage = 5;
 
-    useEffect(() => {
+    useEffect(async () => {
       const fetchData = async () => {
         let response;
         if (activeButton === 'newest') {
@@ -55,7 +58,27 @@ function QuestionList({Questions, updatePage, answerPage}){
         if (response) {
           updatePage('questionList', response.data);
         }
-      };
+        console.log('Response from server:', response);
+        if (response && response.data){
+          const initialVotes = await Promise.all(
+            response.data.map(async (questionEntry) => ({
+              questionId: questionEntry._id,
+              votes: await getVotes(questionEntry._id),
+            }))
+          );
+    
+          setVotes((prevVotes) => {
+            const newVotes = { ...prevVotes };
+            initialVotes.forEach(({ questionId, votes }) => {
+              newVotes[questionId] = votes;
+            });
+            return newVotes;
+          });
+        }
+        
+      }
+
+      
 
       const findTags = async () => {
         try{
@@ -66,9 +89,66 @@ function QuestionList({Questions, updatePage, answerPage}){
           console.error(error);
          }
       }
+      
       fetchData();
       findTags();
-    }, [activeButton, updatePage]);
+    }, [activeButton, updatePage, currentPage]);
+
+    const paginate = (pageNumber) => {
+      setCurrentPage(pageNumber);
+    };
+
+    const handleVote = async (questionId, type) => {
+      console.log('Voting for questionId:', questionId, 'with type:', type);
+      try {
+        const response = await axios.post(`http://localhost:8000/questions/vote/${questionId}`, { voteType: type });
+        console.log('Response from server:', response);
+        setVotes((prevVotes) => ({ ...prevVotes, [questionId]: response.data.question.votes }));
+        console.log('After vote - Updated votes state:', votes);
+      } catch (error) {
+        console.error('Error during vote:', error);
+      }
+    };
+    
+    
+    
+    const getVotes = async (questionId) => {
+      try {
+        const votesResponse = await axios.get(`http://localhost:8000/questions/votes/${questionId}`);
+        console.log('Response from server:', votesResponse);
+        return votesResponse.data.votes;
+      } catch (error) {
+        console.error("Error fetching votes:", error);
+        return { upvotes: 0, downvotes: 0 };
+      }
+    };
+    
+    const updateVotes = async (question) => {
+      const updatedVotes = await Promise.all(
+        Questions.map(async (questionEntry) => ({
+          questionId: questionEntry._id,
+          votes: await getVotes(questionEntry._id),
+        }))
+      );
+    
+      setVotes((prevVotes) => {
+        const newVotes = { ...prevVotes };
+        updatedVotes.forEach(({ questionId, votes }) => {
+          newVotes[questionId] = votes;
+        });
+        if (question && question._id) {
+          newVotes[question._id] = question.votes;
+        }
+        return newVotes;
+      });
+    };
+    
+  
+      
+
+    const indexOfLastQuestion = currentPage * questionsPerPage;
+    const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
+    const currentQuestions = Questions.slice(indexOfFirstQuestion, indexOfLastQuestion);
 
     const getTagNames = (tagIds) => {
       return tagIds.map((tagId) => {
@@ -81,7 +161,9 @@ function QuestionList({Questions, updatePage, answerPage}){
         <div>
             <div className="flex-container">
               <div><h2>All Questions</h2></div>
-                <div><button id="askQuestionButton" onClick={() => {answerPage("questionForm", Questions)}}>Ask Question</button></div>
+                <div>
+                  {isAuthQ && (<button id="askQuestionButton" onClick={() => {answerPage("questionForm", Questions)}}>Ask Question</button>)}
+                </div>
             </div>
 
             <div className="flex-container">
@@ -96,16 +178,19 @@ function QuestionList({Questions, updatePage, answerPage}){
                     <button onClick= {() => setActiveButton('unanswered')}
                     className={activeButton === 'unanswered' ? 'activeunansweredButton' : 'unactiveunansweredButton'}>Unanswered</button>
                   </div>
-              </div>
+            </div>
 
         <div className="question-list" >
-              {Questions.length > 0 ? (
-              Questions.map((questionEntry)=> (
+              {currentQuestions.length > 0 ? (
+              currentQuestions.map((questionEntry)=> (
           <div className="question-entry" key={questionEntry._id}>
 
           <div className="right-column2">
                 <div className="question_stats">{questionEntry.views} views </div>
                 <div className="question_stats">{questionEntry.answers.length} answers </div>
+                <button onClick={() => handleVote(questionEntry._id, 'upvote')}>⬆️</button>
+                <span>{(votes[questionEntry._id] && votes[questionEntry._id].upvotes) || 0} - {(votes[questionEntry._id] && votes[questionEntry._id].downvotes) || 0}</span>
+                <button onClick={() => handleVote(questionEntry._id, 'downvote')}>⬇️</button>
           </div>
     
           <div className="middle-column">
@@ -138,6 +223,16 @@ function QuestionList({Questions, updatePage, answerPage}){
                       <h1 className="noQuestionHeading">No Questions Found</h1>
                   </div>
               )}
+          </div>
+          <div className="pagination">
+            <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+              Previous
+            </button>
+            
+            <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === Math.ceil(Questions.length / questionsPerPage)}>
+              Next
+            </button>
+            <span> Page: {currentPage}</span>
           </div>
         </div>
     );
