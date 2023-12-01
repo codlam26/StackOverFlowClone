@@ -39,6 +39,7 @@ process.on('SIGINT', async () => {
 const Question = require('./models/questions');
 const Tags = require('./models/tags');
 const Answers = require('./models/answers');
+const User = require('./models/users');
 
 //Tags
 app.get('/api/tags', async(req,res) => {
@@ -290,6 +291,44 @@ async function incrementViews(questionId) {
     }
   });
 
+  app.post('/questions/vote/:id', async (req, res) => {
+    console.log('Reached the vote route handler');
+    const { id } = req.params;
+    const { voteType } = req.body;
+    console.log('Received vote request for question ID:', id, 'with type:', voteType);
+    try {
+      const question = await Question.findById(id);
+      if (!question) {
+        return res.status(404).json({ success: false, message: 'Question not found' });
+      }
+      if (voteType === 'upvote') {
+        question.votes.upvotes += 1;
+      } else if (voteType === 'downvote') {
+        question.votes.downvotes += 1;
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid vote type' });
+      }
+      await question.save();
+      res.json({ success: true, question });
+    } catch (error) {
+      console.error('Error during vote:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  app.get('/questions/votes/:id', async (req, res) => {
+    try {
+      const question = await Question.findById(req.params.id);
+      if (!question) {
+        return res.status(404).json({ success: false, message: 'Question not found' });
+      }
+      res.json({ success: true, votes: question.votes });
+    } catch (error) {
+      console.error('Error fetching votes:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
   async function getNewTag(input_tag){
     var tagIdArray = [];
     var tagArray = input_tag.split(" ");
@@ -350,6 +389,47 @@ async function incrementViews(questionId) {
     } catch (error) {
       console.error('Error adding question:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  //Welcome Page
+  app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      const user = await User.findOne({ email }).exec();
+      if (user && user.password === password) {
+        res.json({ success: true, message: 'Login successful', user});
+      } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  app.post('/signup', async (req, res) => {
+    const { username, email, password } = req.body;
+    try {
+      const existingUser = await User.findOne({ email }).exec();
+      const existingUser_username = await User.findOne({ username }).exec();
+      if (existingUser_username) {
+        return res.status(400).json({ success: false, message: 'Username is taken, try again' });
+      }
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'Email is already registered' });
+      }
+      const newUser = new User({
+        username,
+        email,
+        password,
+      });
+  
+      await newUser.save();
+      res.json({ success: true, message: 'Signup successful', user: newUser });
+    } catch (error) {
+      console.error('Error during signup:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
     }
   });
 
