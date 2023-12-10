@@ -1,9 +1,9 @@
 import React, {useState} from 'react';
 import axios from 'axios';
 
-function AnswerForm({updatePage, question_id}){
-      const [username, setUsername] = useState("");
-      const [answerText, setAnswerText] = useState("");
+function AnswerForm({updatePage, question_id, user, editAnswer}){
+      const [username, setUsername] = useState(user);
+      const [answerText, setAnswerText] = useState(editAnswer?.text || "");
       const [hyperlinkError, setHyperlinkError] = useState(null);
       
       const extractHyperlinks = (text) => {
@@ -31,7 +31,7 @@ function AnswerForm({updatePage, question_id}){
 
       const handleAnswer = (event) => {
         event.preventDefault();
-        if (username.trim() === "" || answerText.trim() === ""){
+        if (answerText.trim() === ""){
           alert("All fields required");
           return;
         } 
@@ -48,30 +48,27 @@ function AnswerForm({updatePage, question_id}){
         username, 
         answerText: answerText,
         };
-        
-        axios.post('http://localhost:8000/api/answers/answerQuestion', newAnswer)
-        .then(() => {
-          updatePage('answerList', question_id);
+        if(editAnswer){
+          const updatedAnswer = {answerText, username};
+          axios.put(`http://localhost:8000/answers/editAnswer/${editAnswer._id}`, updatedAnswer)
+            .then(() => {
+              updatePage('answerList', question_id);
         });
+        }
+        else{
+          axios.post('http://localhost:8000/api/answers/answerQuestion', newAnswer)
+          .then(() => {
+            updatePage('answerList', question_id);
+        });
+        }
         setUsername('');
         setAnswerText('')
         setHyperlinkError(null)
       }
 
+
     return(
             <form id="answer-form" onSubmit={handleAnswer}>
-              <div>
-                <label htmlFor="answerUsername">Username*</label>
-                <br/>
-                <input 
-                type="text" 
-                id="answerUsername" 
-                name="answerUsername" required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}/>
-                <br/>
-                <div className="error-Message" id="username-error"></div>
-              </div>
 
               <div>  
                 <label htmlFor="answerText">Answer Text*</label>

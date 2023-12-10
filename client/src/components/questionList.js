@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react";
 import axios from "axios";
-
+import Comment from "./comment";
 
 function formatQuestionDate(askDate2){
     const months = ['January' , 'February', 'March', 'April', 'May', 'June',
@@ -36,12 +36,48 @@ function formatQuestionDate(askDate2){
          }
        }
 
-function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
+function QuestionList({Questions, updatePage, answerPage, isAuthQ, user}){
     const [activeButton, setActiveButton] = useState('');
     const [tags, setTags] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [usernames, setUsernames] = useState({});
     const [votes, setVotes] = useState({});
     const questionsPerPage = 5;
+    
+    useEffect(() => {
+      const fetchUsernames = async () => {
+          const usernamesObj = {};
+          for (let question of Questions) {
+              try {
+                  const response = await axios.get(`http://localhost:8000/users/${question.asked_by}/username`);
+                  usernamesObj[question.asked_by] = response.data;
+              } catch (error) {
+                  console.error("Error fetching username:", error);
+              }
+          }
+          setUsernames(usernamesObj);
+      };
+
+      fetchUsernames();
+  }, [Questions]);
+
+    const handleVote = async (questionId, voteType) => {
+      try{
+        const userId = user._id;
+        const response = await axios.patch(`http://localhost:8000/questions/incrementvotes/${questionId}`,{
+          userId, voteType
+        });
+        if(response.data.success){
+          setVotes((prevVotes) => ({
+            ...prevVotes, [questionId]: response.data.question.votes
+          }));
+        }
+        updatePage('questionList', Questions)
+      }
+      catch(error){
+        console.error('Error during vote:', error);
+      }
+    }
 
     useEffect(async () => {
       const fetchData = async () => {
@@ -57,28 +93,8 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
         }
         if (response) {
           updatePage('questionList', response.data);
-        }
-        console.log('Response from server:', response);
-        if (response && response.data){
-          const initialVotes = await Promise.all(
-            response.data.map(async (questionEntry) => ({
-              questionId: questionEntry._id,
-              votes: await getVotes(questionEntry._id),
-            }))
-          );
-    
-          setVotes((prevVotes) => {
-            const newVotes = { ...prevVotes };
-            initialVotes.forEach(({ questionId, votes }) => {
-              newVotes[questionId] = votes;
-            });
-            return newVotes;
-          });
-        }
-        
+        }        
       }
-
-      
 
       const findTags = async () => {
         try{
@@ -92,60 +108,12 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
       
       fetchData();
       findTags();
-    }, [activeButton, updatePage, currentPage]);
+    }, [activeButton , currentPage]);
 
     const paginate = (pageNumber) => {
       setCurrentPage(pageNumber);
     };
-
-    const handleVote = async (questionId, type) => {
-      console.log('Voting for questionId:', questionId, 'with type:', type);
-      try {
-        const response = await axios.post(`http://localhost:8000/questions/vote/${questionId}`, { voteType: type });
-        console.log('Response from server:', response);
-        setVotes((prevVotes) => ({ ...prevVotes, [questionId]: response.data.question.votes }));
-        console.log('After vote - Updated votes state:', votes);
-      } catch (error) {
-        console.error('Error during vote:', error);
-      }
-    };
     
-    
-    
-    const getVotes = async (questionId) => {
-      try {
-        const votesResponse = await axios.get(`http://localhost:8000/questions/votes/${questionId}`);
-        console.log('Response from server:', votesResponse);
-        return votesResponse.data.votes;
-      } catch (error) {
-        console.error("Error fetching votes:", error);
-        return { upvotes: 0, downvotes: 0 };
-      }
-    };
-    
-    const updateVotes = async (question) => {
-      const updatedVotes = await Promise.all(
-        Questions.map(async (questionEntry) => ({
-          questionId: questionEntry._id,
-          votes: await getVotes(questionEntry._id),
-        }))
-      );
-    
-      setVotes((prevVotes) => {
-        const newVotes = { ...prevVotes };
-        updatedVotes.forEach(({ questionId, votes }) => {
-          newVotes[questionId] = votes;
-        });
-        if (question && question._id) {
-          newVotes[question._id] = question.votes;
-        }
-        return newVotes;
-      });
-    };
-    
-  
-      
-
     const indexOfLastQuestion = currentPage * questionsPerPage;
     const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
     const currentQuestions = Questions.slice(indexOfFirstQuestion, indexOfLastQuestion);
@@ -188,20 +156,31 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
           <div className="right-column2">
                 <div className="question_stats">{questionEntry.views} views </div>
                 <div className="question_stats">{questionEntry.answers.length} answers </div>
-                <button onClick={() => handleVote(questionEntry._id, 'upvote')}>⬆️</button>
-                <span>{(votes[questionEntry._id] && votes[questionEntry._id].upvotes) || 0} - {(votes[questionEntry._id] && votes[questionEntry._id].downvotes) || 0}</span>
-                <button onClick={() => handleVote(questionEntry._id, 'downvote')}>⬇️</button>
+               
+               {isAuthQ && (<div className = "voting-buttons">
+                  <button className = "voteButton" onClick={() => handleVote(questionEntry._id, 'upvote')}>⬆</button>
+                  <br/>
+                  <span className="question_stats">{votes[questionEntry._id] || questionEntry.votes} votes</span>
+                  <br/>
+                  <button className = "voteButton"  onClick={() => handleVote(questionEntry._id, 'downvote')}>⬇</button>
+                </div>)}
+                
           </div>
     
           <div className="middle-column">
-            <div className= "question_title"> <button 
+            <div className= "question_title"> 
+            <button 
             className="answersLink" 
             id= {questionEntry._id} 
             key={questionEntry._id}
             onClick = {async () => {await axios.patch('http://localhost:8000/questions/incrementViews/' + questionEntry._id);
             answerPage("answerList", questionEntry._id)
           }}
-            >{questionEntry.title}</button></div>
+            >{questionEntry.title}</button>
+
+            <p className="question_summary"> {questionEntry.summary}</p>
+            </div>
+            <Comment questionID={questionEntry._id} user={user} updatePage={updatePage} commentType={'question'} isAthQ={isAuthQ}/>
             <div>
               {getTagNames(questionEntry.tags).map((tagName, index) => (
                   <span key={index} className="tag">{tagName}</span>
@@ -212,7 +191,7 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ}){
           <div className="left-column2">
             <div className = "question_metadata">
               <span className ="askedBy">
-              {questionEntry.asked_by}</span> asked {formatQuestionDate(questionEntry.ask_date_time)}
+              {usernames[questionEntry.asked_by]}</span> asked {formatQuestionDate(questionEntry.ask_date_time)}
             </div>  
           </div>
 

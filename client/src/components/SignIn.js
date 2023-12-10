@@ -1,52 +1,64 @@
-// SignIn.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import MainPage from './mainPage';
 
-const SignIn = ({ onSignInSuccess }) => {
+function SignIn({ onSignInSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [redirectToFakeStackOverflow, setRedirectToFakeStackOverflow] = useState(false);
   const [user, setUser] = useState(null);
+  let isMounted = true;
 
-  const handleSignIn = async() => {
+  useEffect(() => {
+    return () => {
+      isMounted = false;
+    };
+  }, []); 
+
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSignIn = async () => {
     if (!isValidEmail(email)) {
       setError('Please enter a valid email address.');
       return;
     }
     setError('');
+
     try {
       const response = await axios.post('http://localhost:8000/login', {
         email,
         password,
-      });
-      if (response.data.success) {
-        const { user } = response.data;
-        setUser(user);
-        console.log('Sign In successful!');
-        onSignInSuccess();
-        setRedirectToFakeStackOverflow(true);
-      } else {
-        setError(response.data.message || 'Invalid credentials');
+      }, { withCredentials: true });
+
+      if (isMounted) {
+        if (response.data.success) {
+          // Assuming response.data.user contains session info
+          setUser(response.data.user);
+          setRedirectToFakeStackOverflow(true);
+          onSignInSuccess(response.data.user);
+        } else {
+          setError(response.data.message || 'Invalid credentials');
+        }
       }
     } catch (error) {
+      if (isMounted) {
         if (error.response) {
-            console.error('Error response:', error.response.data);
-            setError(error.response.data.message || 'Invalid credentials');
+          console.error('Error response:', error.response.data);
+          setError(error.response.data.message || 'Invalid credentials');
         } else {
-            setError('Error during sign-in. Please try again.');
+          setError('Error during sign-in. Please try again.');
         }
+      }
     }
   };
 
   if (redirectToFakeStackOverflow) {
-    return <MainPage userName ={user}/>;
+    return <MainPage username={user} />;
   }
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
 
   return (
     <div style={styles.container}>
@@ -59,7 +71,7 @@ const SignIn = ({ onSignInSuccess }) => {
         <button style={styles.button} onClick={handleSignIn}>
           Sign In
         </button>
-        {error && <p style={{ color: 'red' , fontSize: '20px'}}>{error}</p>}
+        {error && <p style={{ color: 'red', fontSize: '20px' }}>{error}</p>}
       </div>
     </div>
   );

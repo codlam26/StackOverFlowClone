@@ -1,7 +1,7 @@
 import React, {useState, useEffect } from "react";
 import axios from "axios";
 
-function TagsList({updatePage, answerPage}){
+function TagsList({newTags, updatePage, answerPage, isAuthQ, user, editTag}){
     const [tags, setTags] = useState([]);
     const [questionCounts, setQuestionCounts] = useState({});
     const [questions, setquestions] = useState({});
@@ -59,23 +59,40 @@ function TagsList({updatePage, answerPage}){
         }
       };
 
+      const handleDeleteClick = async (tagId) => {
+        axios.delete(`http://localhost:8000/tags/deleteTag/${tagId}`).then(async (response) => {
+            if(response.data === 'success'){
+                const updatedTagList = tags.filter((tag) => tag._id !== tagId);
+                setTags(updatedTagList); 
+            }
+        })
+    }
+
     return(
         <div className="tagsPage">
             <div className="flex-container">
                 <h2 id="tagsHeader">{tags.length} Tags</h2>
                 <h1>All Tags</h1>
-                <button id="askQuestionButtonTag" onClick = {() => {answerPage("questionForm")}}>Ask Question</button>
+                {isAuthQ ? (<button id="askQuestionButtonTag" onClick = {() => {answerPage("questionForm")}}>Ask Question</button>) : <div></div>}
             </div>
-            
+
             <div id="tagList" className="tag-container">
                 
                 {tags.map((tagEntry) =>
-                    <div className="tagBox" key={tagEntry._id}>
+                     <div className="tagBox" key={tagEntry._id}>
                         <button className="link-style-button" onClick={() => {handleClick(tagEntry._id)}}>
-                            {tagEntry.name}
-                        </button>
-                        <div>{questionCounts[tagEntry._id]} Questions</div>
-                    </div>
+                        {tagEntry.name}
+                </button>
+                <div>{questionCounts[tagEntry._id]} Questions </div>
+                {tagEntry.created_by === user || user.isAdmin && 
+                    (<div>
+                        <button className='editButton' onClick={() => updatePage('tagsForm', null, tagEntry)}>Edit</button>
+                        <button className='deleteButton' onClick={() => {handleDeleteClick(tagEntry._id)}}>Delete</button>
+                    </div>)
+                }
+                
+             </div>
+                    
                 )}
             </div>  
         </div>

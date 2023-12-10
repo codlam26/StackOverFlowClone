@@ -3,16 +3,35 @@
 // This is where you should start writing server-side code for this application.
 
 const express = require('express');
-const router = express.Router();
 const mongoose = require('mongoose');
 const cors = require('cors');
-
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 8000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  methods:['POST', 'PUT', 'GET', 'DELETE', 'PATCH'],
+  credentials:true
+}));
+
 app.use(express.json());
+
+let secretKey = process.argv.slice(2)[0];
+
+app.use(
+  session({
+    secret: secretKey,
+    cookie: {httpOnly: true, maxAge: 1000 * 60 * 5 * 60},
+    resave: false,
+    saveUninitialized: false,
+  })
+)
+
+app.use(cookieParser());
 
 const dataURL = 'mongodb://127.0.0.1:27017/fake_so';
 mongoose.connect(dataURL, {useNewUrlParser: true, useUnifiedTopology:true})
@@ -40,6 +59,7 @@ const Question = require('./models/questions');
 const Tags = require('./models/tags');
 const Answers = require('./models/answers');
 const User = require('./models/users');
+const Comments = require('./models/comments');
 
 //Tags
 app.get('/api/tags', async(req,res) => {
@@ -87,6 +107,50 @@ app.get('/tags/:tags', async (req,res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
+app.get('/tags/byUser/:userId', async (req,res) => {
+  const userId = req.params.userId;
+  try{
+    const result = await Tags.find({created_by: userId}).exec();
+    res.send(result);
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+})
+
+app.put('/tags/editTag/:tagId', async (req, res) => {
+
+})
+
+app.delete('/tags/deleteTag/:tagId', async (req, res) => {
+  const tagId = req.params.tagId;
+  try{
+    const Tag = await Tags.find({_id: tagId}).exec();
+    console.log(req.session);
+    if(Tag[0].created_by.toString() !== req.session.user && req.session.isAdmin){
+      res.send('Error you are not the owner of the tag');
+      return;
+    }
+
+    const questionUsingTag = await Question.find({tags: tagId}).exec();
+    for(let i = 0; i < questionUsingTag.length; i++){
+      if(questionUsingTag[i].asked_by.toString() !== Tag[0].created_by.toString()){
+        res.send('Another user is using this tag');
+        return;
+      }
+    }
+
+    await Tags.deleteOne({_id: tagId}).exec();
+    await Question.updateMany({}, {tags:tagId}).exec();
+    res.send({success: true});
+  }
+  catch(err){
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+})
 
 //answers
 app.get('/api/answers', async (req,res) => {
@@ -136,6 +200,92 @@ app.post('/api/answers/answerQuestion', async (req,res) =>{
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.patch('/answers/incrementvotes/:answer_id', async (req, res) => {
+  try{
+    const answer = await Answers.findById(req.params.answer_id);
+    const {userId, voteType} = req.body;
+    const user = await User.findById(userId);
+    if(!user || user.reputation < 50){
+      return res.status(403).send('User cannot vote, low reputation')
+    }
+    if(!answer){
+        return res.status(404).send('Answer not found');
+    }
+
+    const voteIncrement = voteType === 'upvote' ? 1: -1;
+    const changeReputation = voteType === 'upvote' ? 5 : -10;
+
+    answer.votes += voteIncrement;
+    await answer.save();
+
+    const answerAuthor = await User.findById(answer.ans_by);
+    answerAuthor.reputation += changeReputation;
+    await answerAuthor.save();
+
+    res.send({success:true, answer, answerAuthor});
+  }
+  catch(err){
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+
+})
+
+app.delete('/answers/deleteAnswer/:answerId', async (req, res) =>{
+  try{
+    const answer = await Answers.findById(req.params.answerId).exec();
+    if(answer){
+      const question = await Question.find({answers: { $in: answer}}).exec();
+      if(question){
+        question[0].answers.pull(answer._id);
+        await question[0].save();
+      }
+
+      answer.comments.forEach(async (comment) => {
+        await Comments.deleteOne({_id: comment._id}).exec()
+      })
+
+      await Answers.deleteOne({_id: req.params.answerId}).exec()
+      res.send('success');
+    }
+    else{
+      res.status(404).send('Answer not found');
+    }
+  }
+  catch (error){
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+})
+
+app.put('/answers/editAnswer/:answerId', async (req, res) => {
+  const {answerText, username} = req.body;
+    const {answerId} = req.params;
+    if(!answerText || !username){
+      return res.status(400).json({error: "All fields are required"})
+    }
+    try{
+      const updatedAnswer = await Answers.findByIdAndUpdate(
+        answerId,
+        {text:answerText,
+        ans_by: username,
+        ans_date_time: new Date(),
+      },
+        {new: true}
+      )
+      if(updatedAnswer){
+        res.status(200).json({message: 'answer updated successfully'});
+      }
+      else{
+        res.status(400).json({error: 'Valdiation failed'})
+      }
+    }
+    catch(err){
+      console.error('Error updating answer:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
 
 //questions
 app.get('/api/questions/', async (req, res) => {
@@ -291,47 +441,52 @@ async function incrementViews(questionId) {
     }
   });
 
-  app.post('/questions/vote/:id', async (req, res) => {
-    console.log('Reached the vote route handler');
-    const { id } = req.params;
-    const { voteType } = req.body;
-    console.log('Received vote request for question ID:', id, 'with type:', voteType);
-    try {
-      const question = await Question.findById(id);
-      if (!question) {
-        return res.status(404).json({ success: false, message: 'Question not found' });
+  app.patch('/questions/incrementvotes/:question_id', async (req, res) => {
+    try{
+      const question = await Question.findById(req.params.question_id);
+      const {userId, voteType} = req.body;
+      const user = await User.findById(userId);
+      if(!user || user.reputation < 50){
+        return res.status(403).send('User cannot vote, low reputation')
       }
-      if (voteType === 'upvote') {
-        question.votes.upvotes += 1;
-      } else if (voteType === 'downvote') {
-        question.votes.downvotes += 1;
-      } else {
-        return res.status(400).json({ success: false, message: 'Invalid vote type' });
+      if(!question){
+          return res.status(404).send('Question not found');
       }
-      await question.save();
-      res.json({ success: true, question });
-    } catch (error) {
-      console.error('Error during vote:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  });
 
-  app.get('/questions/votes/:id', async (req, res) => {
-    try {
-      const question = await Question.findById(req.params.id);
-      if (!question) {
-        return res.status(404).json({ success: false, message: 'Question not found' });
-      }
-      res.json({ success: true, votes: question.votes });
-    } catch (error) {
-      console.error('Error fetching votes:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      const voteIncrement = voteType === 'upvote' ? 1: -1;
+      const changeReputation = voteType === 'upvote' ? 5 : -10;
+
+      question.votes += voteIncrement;
+      await question.save();
+
+      const questionAuthor = await User.findById(question.asked_by);
+      questionAuthor.reputation += changeReputation;
+      await questionAuthor.save();
+
+      res.send({success:true, question, questionAuthor});
     }
-  });
+    catch(err){
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    }
+    
+  })
+
+  app.get('/questions/byUser/:userId', async (req, res) => {
+    try{
+      const questions = await Question.find({asked_by: req.params.userId}).sort
+      ({ask_date_time: -1}).exec();
+      res.send(questions)
+    }
+    catch(err){
+      console.error(err)
+      res.status(500).send('Internal Server Error');
+    }
+  })
 
   async function getNewTag(input_tag){
     var tagIdArray = [];
-    var tagArray = input_tag.split(" ");
+    var tagArray = input_tag.toLowerCase().split(" ");
     var existingTagSet = new Set();
     
     for(var i = 0, len = tagArray.length; i < len; i++){
@@ -354,9 +509,8 @@ async function incrementViews(questionId) {
     return tagIdArray;
   }
 
-  async function addNewQuestion(title, text, tags, username){
+  async function addNewQuestion(title, summary, text, tags, username){
     var tagArray = tags.split(" ");
-    console.log("Recieved tagArray", tagArray);
     for(var i = 0, len = tagArray.length; i < len; i++){
       if(tagArray[i].length > 10 || tagArray.length > 5 ){
         return false;
@@ -364,6 +518,7 @@ async function incrementViews(questionId) {
     }
       const newQuestion = {
       title: title,
+      summary: summary,
       text: text,
       tags: await getNewTag(tags),
       asked_by: username,
@@ -374,12 +529,16 @@ async function incrementViews(questionId) {
    }
 
    app.post('/api/questions/askQuestion', async (req, res) => {
-    const {title, text, tags, username } = req.body;
-    if (!title || !text || !tags || !username) {
+    const {title, summary, text, tags, username } = req.body;
+    if (!title || !summary|| !text || !tags || !username) {
       return res.status(400).json({ error: 'All fields are required' });
     }
+    if(username.reputation < 50){
+      res.send({ error: true, message: 'User must have at least 50 reputation points to create a new tag.' });
+      return;
+    }
     try {
-      const result = addNewQuestion(title, text, tags, username);
+      const result = await addNewQuestion(title, summary, text, tags, username);
   
       if (result) {
         res.status(201).json({ message: 'Question added successfully' });
@@ -392,22 +551,191 @@ async function incrementViews(questionId) {
     }
   });
 
-  //Welcome Page
-  app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      const user = await User.findOne({ email }).exec();
-      if (user && user.password === password) {
-        res.json({ success: true, message: 'Login successful', user});
-      } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
-      }
-    } catch (error) {
-      console.error('Error during login:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+  app.get('/question/questionAnswered/:userId', async (req, res) => {
+    try{
+      const answersByUser = await Answers.find({ans_by: req.params.userId}).exec();
+      const questions = await Question.find({answers: {$in: answersByUser}}).sort({ask_date_time: -1});
+      res.send(questions);
     }
-  });
+    catch(err){
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    }
+  })
+  
+  async function updateQuestion(id, title, summary, text, tags, username) {
+    const tagArray = tags.split(" ");
+    for (let tag of tagArray) {
+        if (tag.length > 10 || tagArray.length > 5) {
+            return false;
+        }
+    }
+    const updatedQuestion = {
+        title: title,
+        summary: summary,
+        text: text,
+        tags: await getNewTag(tags),
+        asked_by: username,
+        ask_date_time: new Date()
+    };
 
+    try {
+        const updated  = await Question.findByIdAndUpdate(id, updatedQuestion, { new: true });
+        return updated;
+    } catch (error) {
+        console.error('Error updating question:', error);
+        return false;
+    }
+}
+
+  app.put('/editQuestion/:questionId', async (req, res) => {
+    const {title, summary, text, tags, username} = req.body;
+    const {questionId} = req.params;
+    if(!title || !summary || !text || !tags || !username){
+      return res.status(400).json({error: "All fields are required"})
+    }
+    try{
+      const result = await updateQuestion(questionId, title, summary, text, tags, username);
+      if(result){
+        res.status(200).json({message: 'Question updated successfully'});
+      }
+      else{
+        res.status(400).json({error: 'Valdiation failed'})
+      }
+    }
+    catch(err){
+      console.error('Error updating question:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+  })
+
+  app.delete('/deleteQuestion/:questionId', async (req, res) => {
+    try{
+      const question =  await Question.findById(req.params.questionId).exec();
+      console.log(question);
+    if(!question){
+      res.status(404).send('Question not found');
+      return;
+    }
+    question.answers.forEach(async (answer) => {
+      await Answers.findByIdAndDelete(answer).exec();
+    })
+
+    question.comments.forEach(async (comment) => {
+      await Comments.findByIdAndDelete(comment).exec();
+    })
+
+    await Question.findByIdAndDelete(req.params.questionId).exec();
+    res.send('success');
+    }
+    catch(err){
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    }
+    
+  })
+
+  //Comments
+  app.get('/question/:question_id/comments', async (req, res) => {
+    try{
+      const question = await Question.findById(req.params.question_id).exec();
+      const comments = await Comments.find({_id: {$in: question.comments}}).exec();
+      res.send(comments);
+  }
+  catch(err){
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+  }
+  })
+
+  app.get('/answer/:answer_id/comments', async (req, res) => {
+    try{
+      const answer = await Answers.findById(req.params.answer_id).exec();
+      const comments = await Comments.find({_id: {$in: answer.comments}}).exec();
+      res.send(comments);
+  }
+  catch(err){
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+  }
+  })
+
+  async function addCommentToAnswers(answer, comment){
+    answer.comments.push(comment);
+    await answer.save();
+  }
+  async function addCommentToQuestions(question, comment){
+    question.comments.push(comment);
+    await question.save();
+  }
+
+  app.post('/postComments', async (req, res) => {
+    try{
+      const {text, userId, id, commentType} = req.body;
+      // let newCommentInput = req.body;
+      // newCommentInput.created_by = req.session.user.userId;
+      const user = await User.findById(userId).exec();
+      if(user.reputation < 50){
+        res.send('User reputation is too low');
+        return; 
+      }
+      if(text.length === 0  || text.length > 140){
+        res.send("Comment must be between 1 and 140 characters");
+        return;
+      }
+      const newComment = new Comments({
+          text: text,
+          created_by: user,
+      })
+      await newComment.save();
+
+      if(commentType === 'answer'){
+        const answer = await Answers.findById(id).exec();
+        await addCommentToAnswers(answer, newComment)
+      }
+      if(commentType === 'question'){
+        const question = await Question.findById(id).exec();
+        await addCommentToQuestions(question, newComment)
+      }
+    }
+    catch(error){
+      console.error("Comment cannot be posted:", error)
+    }
+  })
+
+  app.patch('/comments/incrementvotes/:comment_id', async (req, res) => {
+    try{
+      const comment = await Comments.findById(req.params.comment_id);
+      const {userId, voteType} = req.body;
+      const user = await User.findById(userId);
+      console.log(user);
+      if(!user){
+        return res.status(403).send('User not Found')
+      }
+      if(!comment){
+          return res.status(404).send('Comment not found');
+      }
+
+      const voteIncrement = voteType === 'upvote' ? 1: -1;
+      const changeReputation = voteType === 'upvote' ? 5 : -10;
+
+      comment.votes += voteIncrement;
+      await comment.save();
+
+      const commentAuthor = await User.findById(comment.created_by);
+      commentAuthor.reputation += changeReputation;
+      await commentAuthor.save();
+
+      res.send({success:true, comment, commentAuthor});
+    }
+    catch(err){
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    }
+    
+  })
+
+  //Users
   app.post('/signup', async (req, res) => {
     const { username, email, password } = req.body;
     try {
@@ -419,10 +747,12 @@ async function incrementViews(questionId) {
       if (existingUser) {
         return res.status(400).json({ success: false, message: 'Email is already registered' });
       }
+      const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = new User({
         username,
         email,
-        password,
+        password: hashedPassword,
+        isAdmin: false,
       });
   
       await newUser.save();
@@ -432,6 +762,126 @@ async function incrementViews(questionId) {
       res.status(500).json({ success: false, message: 'Internal server error' });
     }
   });
+
+  app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      const user = await User.findOne({ email }).exec();
+      if (await bcrypt.compare(password, user.password)) {
+        const sessionUser = {
+          loggedIn: true,
+          username: user.username,
+          email: user.email,
+          userId: user._id,
+          reputation: user.reputation,
+          created_by: user.created_by,
+          isAdmin: user.isAdmin,
+        };
+        req.session.user = sessionUser;
+        res.json({ success: true, message: 'Login successful', user});
+        return;
+      } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  app.get('/session', (req, res) => {
+    res.send(req.session.user); 
+  })
+
+  app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+      res.send(err);
+      return;
+    });
+    res.send('success');
+  })
+
+  function isAutheticated(req, res, next){
+    if(req.session.user){
+      next();
+    }
+    else{
+      res.status(401).send('Unauthorized')
+    }
+  }
+
+  app.get('/api/users', async (req, res) => {
+    try{
+      const users = await User.find();
+      res.json(users);
+  }
+  catch(error){
+      console.error(error);
+      res.status(500).json({error: 'Server error'});
+  }
+  })
+
+  app.get('/users/:user_id/username',  async (req, res) => {
+    try{
+      const user = await User.findById(req.params.user_id).exec();
+    res.send(user.username);
+    }
+    catch (err) {
+      res.send('Internal Server Error'); 
+    }
+  });
+
+  app.delete('/users/deleteUser/:id', async (req, res) => {
+    // if(!req.session.user.isAdmin){
+    //   res.send('You do not have permission to delete users.')
+    // }
+
+    try{
+      const questions = await Question.find({asked_by: req.params.id}).exec();
+      questions.forEach(async (question) => {
+        question.answers.forEach(async (answer) => {
+          await Answers.findByIdAndDelete(answer).exec();
+        });
+        question.comments.forEach(async (comment) => {
+          await Comments.findByIdAndDelete(comment).exec();
+        });
+      });
+
+      await Question.deleteMany({asked_by: req.params.id}).exec();
+
+      await Answers.deleteMany({ans_by: req.params.id}).exec();
+
+      await Comments.deleteMany({created_by: req.params.id}).exec();
+
+      const tags = await Tags.find({created_by: req.params.id}).exec();
+      for (const tag of tags) {
+        const questionTag = await Question.find({tags: tag._id.toString()}).exec();
+        let deleteTag = true;
+        for (const question of questionTag){
+          if(question.asked_by.toString() !== tag.created_by.toString()){
+            deleteTag = false;
+            break;
+          }
+        }
+
+        if(deleteTag){
+          await Tags.deleteOne({_id: tag._id}).exec();
+        } 
+        else{
+          await Tags.updateOne({_id: tag._id}, {$set: {created_by:req.session.user}})
+        }
+      }
+
+      await User.findByIdAndDelete(req.params.id).exec();
+
+      res.send('success');
+    }
+    catch(err){
+      console.log(err);
+      res.send('Internal Server Error occurred. Please try again');
+      return;
+    }
+  })
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

@@ -1,10 +1,9 @@
 // SignUp.jsx
 import React, { useState } from 'react';
-import MainPage from './mainPage';
 import SignIn from './SignIn'; 
 import axios from 'axios';
 
-const SignUp = ({ setSuccessMessage }) => {
+function SignUp({ onAuthAccess, onSignInSuccess}){
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,10 +11,14 @@ const SignUp = ({ setSuccessMessage }) => {
   const [errors, setErrors] = useState([]);
   const [redirectToLogin, setRedirectToLogin] = useState(false);
 
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSignUp = async () => {
     const newErrors = [];
 
-    
     if (!isValidEmail(email)) {
       newErrors.push('Please enter a valid email address.');
     }
@@ -24,7 +27,6 @@ const SignUp = ({ setSuccessMessage }) => {
       newErrors.push('Passwords do not match.');
     }
 
-    
     if (password.includes(email) || password.includes(username)) {
       newErrors.push('Password cannot contain email or username.');
     }
@@ -33,35 +35,37 @@ const SignUp = ({ setSuccessMessage }) => {
       return;
     }
 
+    
     try {
       const response = await axios.post('http://localhost:8000/signup', {
         username,
         email,
         password,
+        isAdmin: false
       });
       if (response.data.success) {
         console.log('Sign Up successful!');
-        setSuccessMessage('Successfully signed up! Now login...');
+        onAuthAccess(response.data.user)
         setRedirectToLogin(true);
+        onSignInSuccess();
       } else {
         setErrors([response.data.message] ||  'Username Taken/Email Already in Use');
       }
-    } catch (error) {
-        if(error.response){
-            console.error('Error during sign-up:', error);
-            setErrors([error.response.data.message]);
-        } else{
-            setErrors(['Error during sign-up. Please try again.']);
-        }
+    } 
+    catch (error) {
+      if (error.response) {
+        console.error('Server response error during sign-up:', error.response);
+        setErrors([error.response.data.message]);
+    } else {
+        console.error('Network or other error during sign-up:', error);
+        setErrors(['Error during sign-up. Please try again.']);
+    }
     }
   };
+  
   if (redirectToLogin) {
-    return <SignIn />;
+    return <SignIn onSignInSuccess={onAuthAccess}/>;
   }
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
 
   return (
     <div style={styles.container}>

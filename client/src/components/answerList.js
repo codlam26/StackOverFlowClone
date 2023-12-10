@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import axios from 'axios';
+import Comment from './comment';
 
 function formatQuestionDate(askDate2){
     const months = ['January' , 'February', 'March', 'April', 'May', 'June',
@@ -35,9 +36,22 @@ function formatQuestionDate(askDate2){
          }
        }
 
-function AnswerList({updatePage, question_id}){
+function AnswerList({updatePage, question_id, isAuthQ, user}){
     const [answers, setAnswers] = useState([]);
     const [question, setquestion] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [tags, setTags] = useState([]);
+    const [usernames, setUsernames] = useState({});
+    const [questionUsernames, setQuestionUsernames] = useState({});
+    const [votes, setVotes] = useState({});
+    const answersPerPage = 5;
+
+    const paginate = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+      const indexOfLastAnswer = currentPage * answersPerPage;
+      const indexOfFirstAnswer = indexOfLastAnswer - answersPerPage;
+      const currentAnswers = answers.slice(indexOfFirstAnswer, indexOfLastAnswer);
 
     useEffect(()=>{
         axios.get(`http://localhost:8000/api/answers/${question_id}`).then((res) => {
@@ -45,11 +59,32 @@ function AnswerList({updatePage, question_id}){
         });
     }, [question_id])
 
-    useEffect(()=>{
-        axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
+    useEffect( async ()=>{
+        await axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
             setquestion(res.data);
         });
     }, [question_id])
+    
+    useEffect(() => {
+        const fetchUsernames = async () => {
+            const usernamesObj = {};
+            const usernamesObj2 = {};
+            for (let answer of answers) {
+                try {
+                    const response = await axios.get(`http://localhost:8000/users/${answer.ans_by}/username`);
+                    usernamesObj[answer.ans_by] = response.data;
+                    const response2 = await axios.get(`http://localhost:8000/users/${question.asked_by}/username`);
+                    usernamesObj2[question.asked_by] = response2.data;
+                } catch (error) {
+                    console.error("Error fetching username:", error);
+                }
+            }
+            setUsernames(usernamesObj);
+            setQuestionUsernames(usernamesObj2);
+        };
+  
+        fetchUsernames();
+    }, [answers]);
 
     const renderTextWithHyperlinks = (text) => {
         return text.split(/(\[.*?\]\(.*?\))/g).map((part, index) => {
@@ -57,7 +92,53 @@ function AnswerList({updatePage, question_id}){
             return match ? <a key={index} href={match[2]} target="_blank" rel="noopener noreferrer">{match[1]}</a> : part;
         });
     };
+
+    const handleVote = async (answerId, voteType) => {
+        try{
+            const userId = user;
+            const response = await axios.patch(`http://localhost:8000/answers/incrementvotes/${answerId}`,{
+            userId, voteType
+            });
+            if(response.data.success){
+            setVotes((prevVotes) => ({
+                ...prevVotes, [answerId]: response.data.answer.votes
+            }));
+            }
+        }
+        catch(error){
+            console.error('Erorr during vote:', error);
+        }
+    }
+
+    useEffect(async () => {
+        const findTags = async () => {
+            try{
+              const Tags = await axios.get(`http://localhost:8000/api/tags`)
+              setTags(Tags.data);
+             }
+             catch(error){
+              console.error(error);
+             }
+          }
+          findTags();
+    },[question])
+
+      const getTagNames = (tagIds) => {
+        return tagIds.map((tagId) => {
+          const tag = tags.find((t) => t._id === tagId);
+          return tag ? tag.name: ''
+        });
+      };
     
+      const handleDeleteClick = async (answerId) => {
+        axios.delete(`http://localhost:8000/answers/deleteAnswer/${answerId}`).then(async (response) => {
+            if(response.data === 'success'){
+                const updatedanswerList = answers.filter((answer) => answer._id !== answerId);
+                setAnswers(updatedanswerList); 
+            }
+        })
+    }
+
     return(
         
         <div className="answer-list">
@@ -72,7 +153,7 @@ function AnswerList({updatePage, question_id}){
                 </div>
 
                 <div className="left-column2">
-                    <button id="askQuestionButtonForm" onClick = {() => {updatePage("questionForm", question_id)}}>Ask Question</button>
+                    {isAuthQ && <button id="askQuestionButtonForm" onClick = {() => {updatePage("questionForm", question_id)}}>Ask Question</button>}
                 </div>
                 </div>
             
@@ -89,32 +170,79 @@ function AnswerList({updatePage, question_id}){
                 <div className="right-column2">
                     <div className="question_metadata">
                         <span className="askedBy">
-                            {question.asked_by}
+                            {questionUsernames[question.asked_by]}
                         </span> asked {formatQuestionDate(question.ask_date_time)}
                     </div>
                 </div>
             </div>
+
+            <div className="flex-container">
+                <div className="left-column2">
+                    <div>{question.votes} votes</div>
+                </div>
+
+                <div className="middle-column">
+                    <div>
+                        {question.tags && getTagNames(question.tags).map((tagName, index) => (
+                        <span key={index} className="tag">{tagName}</span>
+                        ))}
+                    </div>
+                    <div>
+                        {isAuthQ && <Comment questionID={question_id} user={user} commentType={'question'} isAthQ={false}/>}
+                    </div>
+                </div>
+
+            </div>            
             </div>
             
-            {answers.map((answerEntry) => (
+            {currentAnswers.map((answerEntry) => (
                 <div key={answerEntry.aid} className="answer-entry">
+                    {isAuthQ && (<div className="left-column2">
+                    
+                    <button className="voteButton"  onClick={() => handleVote(answerEntry._id, 'upvote')}>⬆</button>
+                    <br/>
+                    <span>{answerEntry.votes} Votes</span>
+                    <br/>
+                    <button className="voteButton" onClick={() => handleVote(answerEntry._id, 'downvote')}>⬇</button>
+                    </div>)}
+                    
                     <div className="middle-column">
-                        <div>
+                        <div className='answerText'>
                             {renderTextWithHyperlinks(answerEntry.text)}
                         </div>
+                        <Comment questionID={question_id} answerID={answerEntry._id} user={user} commentType={'answer'} updatePage={updatePage} isAthQ={isAuthQ}/>
                     </div>
 
                     <div className="right-column2">
                         <div className="question_metadata">
                             <span className="answeredBy">
-                                {answerEntry.ans_by}
+                                {usernames[answerEntry.ans_by]}
                             </span> answered {formatQuestionDate(answerEntry.ans_date_time)}
                         </div>
+                        {answerEntry.ans_by === user._id && (
+                            <span>
+                                <button className='editButton' onClick = {() => {updatePage("answerForm", question_id, answerEntry)}}>Edit</button>
+                                <button className='deleteButton' onClick = {() => {handleDeleteClick(answerEntry._id)}}>Delete</button>
+                             </span>
+                        )}
+                        
+                    
                     </div>
                 </div>
             ))}
             
-            <button id="answerQuestionButton" onClick = {() => {updatePage("answerForm", question_id)}}>Answer Question</button>
+            {isAuthQ && (<button id="answerQuestionButton" onClick = {() => {updatePage("answerForm", question_id)}}>Answer Question</button>)}
+            
+            <div className="pagination">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+                Previous
+                </button>
+                
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === Math.ceil(answers.length / answersPerPage)}>
+                Next
+                </button>
+                <span> Page: {currentPage}</span>
+          </div>
         </div>
     );
 }
