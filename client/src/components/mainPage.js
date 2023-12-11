@@ -19,7 +19,7 @@ function MainPage({ isAuthenticated, username}){
     const [redirectWelcome, setRedirectWelcome] = useState(false);
     const [user, setUser] = useState(username);
     const [tags, setTags] = useState([]);
-    const [editQuestion, setEditQuestion] = useState(null);
+    const [editFeature, setEditFeature] = useState(null);
     const [isLoggedOut, setIsLoggedOut] = useState(false);
 
     const handleSignUp = () => {
@@ -33,15 +33,15 @@ function MainPage({ isAuthenticated, username}){
     const updateCurrentView = (newView, questionID, editAnswer) => {
         setCurrentView(newView);
         setquestionID(questionID);
-        setEditQuestion(editAnswer);
+        setEditFeature(editAnswer);
         setActiveLink(" ");
     }
 
-    const updateQuestionsView = (newView, data, editQuestion) => {
+    const updateQuestionsView = (newView, data, editQuestion, isUserSpecificTags = false) => {
       setCurrentView(newView);
       if(newView === 'tagsList'){
-        setTags(data);
-        setActiveLink("tags");
+          setTags(data);
+          setActiveLink("tags");
       }
       else if (Array.isArray(data)) {
           setQuestions(data);
@@ -52,13 +52,22 @@ function MainPage({ isAuthenticated, username}){
           setActiveLink("questions");
       }
       
-      setEditQuestion(editQuestion);
+      setEditFeature(editQuestion);
     }
 
     const updateUserView = (newView, user) => {
       setCurrentView(newView);
       setUser(user);
   }
+  const updateTagPage = (newView, updatedTagsList) => {
+    // Update the current view
+    setCurrentView(newView);
+
+    // Update the tags data if provided
+    if (updatedTagsList) {
+        setTags(updatedTagsList);
+    }
+};
     const fetchNewestQuestions = async () => {
       try {
         const response = await axios.get('http://localhost:8000/questions/newest');
@@ -72,7 +81,17 @@ function MainPage({ isAuthenticated, username}){
 
     useEffect(() => {
       fetchNewestQuestions();
+      fetchAllTags();
     }, []);
+
+    const fetchAllTags = async () => {
+      try {
+          const response = await axios.get('http://localhost:8000/api/tags/');
+          setTags(response.data);
+      } catch (error) {
+          console.error('Error fetching all tags:', error);
+      }
+  };
     
     const handleLogOut = async () => {
       try {
@@ -135,7 +154,7 @@ function MainPage({ isAuthenticated, username}){
                 </p>
                 <p style={{textAlign: 'center'}}>
                   <button id="tagsLink"
-                  onClick={() => {navigateTo('tagsList'); setActiveLink('tags')}}
+                  onClick={() => {navigateTo('tagsList'); setActiveLink('tags'); fetchAllTags()}}
                   className= {activeLink === 'tags' ? 'activeLink' : ' '}>Tags</button>  
                 </p>
               </div>
@@ -149,16 +168,16 @@ function MainPage({ isAuthenticated, username}){
                     <AnswerList updatePage = {updateCurrentView} question_id={questionID} isAuthQ={isAuthenticated} user={username}/>}
 
                 {currentView === 'tagsList' && 
-                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated} editTag={editQuestion}/>}
+                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated} editTag={editFeature}/>}
   
                  {currentView === 'questionForm' &&
-                    <QuestionForm updatePage = {updateQuestionsView} user={username} editQuestion={editQuestion}/>}
+                    <QuestionForm updatePage = {updateQuestionsView} user={username} editQuestion={editFeature}/>}
 
                 {currentView === 'answerForm' && 
-                    <AnswerForm updatePage = {updateCurrentView} question_id={questionID} user={username} editAnswer={editQuestion}/>}
+                    <AnswerForm updatePage = {updateCurrentView} question_id={questionID} user={user} editAnswer={editFeature}/>}
                 
                 {currentView === 'tagsForm' &&
-                    <TagsForm editTag={editQuestion} updatePage={updateQuestionsView}/>}
+                    <TagsForm editTag={editFeature} user={user} updatePage={updateTagPage}/>}
                 
                 {currentView === 'userPage' &&
                     <UserPage user={user} updatePage={updateQuestionsView}/>}

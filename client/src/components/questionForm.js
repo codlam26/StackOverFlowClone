@@ -4,12 +4,14 @@ import axios from 'axios';
 function QuestionForm({updatePage, user, editQuestion}){
     const [title, setTitle] = useState(editQuestion?.title || '');
     const [text, setText] = useState(editQuestion?.text || '');
-    const [tags, setTags] = useState( '');
+    const [tags, setTags] = useState('');
     const [summary, setSummary] = useState(editQuestion?.summary ||'');
     const [username, setUserName] = useState(user);
     const [allTags, setAllTags] = useState([]);
     const [textError, setTexterror] = useState(null);
     const [tagError, setTagerror] = useState(null);
+    const [titleError, setTitleError] = useState(null);
+    const [summaryError, setSummaryError] = useState(null);
 
     const extractHyperlinks = (text) => {
       const regex_pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
@@ -55,6 +57,7 @@ function QuestionForm({updatePage, user, editQuestion}){
           return tag ? tag.name : '';
       });
   };
+  
     const handlePostQuestion = (event) => {
       event.preventDefault();
       
@@ -62,7 +65,14 @@ function QuestionForm({updatePage, user, editQuestion}){
         alert('All fields are required');
         return;
       }
-
+      if(title.length > 50){
+        setTitleError("The title is longer than 50 characters");
+        return;
+      }
+      if(summary.length > 140 ){
+        setSummaryError("The summary is longer than 140 characters")
+        return;
+      }
       if(user.reputation < 50){
         setTagerror("You have less than 50 reputation");
         return;
@@ -136,6 +146,8 @@ function QuestionForm({updatePage, user, editQuestion}){
       setSummary('');
       setTexterror(null);
       setTagerror(null);
+      setSummaryError(null)
+      setTitleError(null);
     }
     
     return(
@@ -143,7 +155,7 @@ function QuestionForm({updatePage, user, editQuestion}){
               <div>
                 <label htmlFor="questionTitle">Question Title*</label>
                 <br/>
-                <p className="questionReq">Limit title to 100 characters or less</p>
+                <p className="questionReq">Limit title to 50 characters or less</p>
                 <input 
                  type="text" 
                  id="questionTitle" 
@@ -153,11 +165,12 @@ function QuestionForm({updatePage, user, editQuestion}){
                  />
                 <br/>
               </div>
+              <div id="errorMessage" style={{color: 'red'}}>{titleError === null ? '': titleError }</div>
 
               <div>  
                 <label htmlFor="questionSummary">Question Summary*</label>
                 <br />
-                <p className="questionReq">Summary Details</p>
+                <p className="questionReq">Limit summary details to 140 characters or less </p>
                 <textarea 
                 id="questionSummary" 
                 name="questionSummary" 
@@ -168,7 +181,7 @@ function QuestionForm({updatePage, user, editQuestion}){
                 ></textarea>
                 <br/>
               </div>
-              <div id="errorMessage" style={{color: 'red'}}>{textError === null ? '': textError }</div>
+              <div id="errorMessage" style={{color: 'red'}}>{summaryError === null ? '': summaryError }</div>
             
               <div>  
                 <label htmlFor="questionText">Question Text*</label>

@@ -11,6 +11,7 @@ function Comment({questionID, answerID, commentType, user, updatePage, isAthQ}){
     const commentsPerPage = 3;
     const handleVote = async (commentId, voteType) => {
         try{
+            
             const userId = user;
             const response = await axios.patch(`http://localhost:8000/comments/incrementvotes/${commentId}`,{
             userId, voteType
@@ -20,6 +21,7 @@ function Comment({questionID, answerID, commentType, user, updatePage, isAthQ}){
                 ...prevVotes, [commentId]: response.data.comment.votes
             }));
             }
+            
         }
         catch(error){
             console.error('Erorr during vote:', error);
@@ -59,10 +61,19 @@ function Comment({questionID, answerID, commentType, user, updatePage, isAthQ}){
                 id: commentType === 'question' ? questionID : answerID,
                 commentType: commentType,
             });
-            console.log("Post Comment Response", response.data);
-            setCommentText('')
-            fetchComments();
-    }catch (error){
+            if(response.data === 'User reputation is too low'){
+                alert("Reputation is less than 50");
+                return;
+            }
+            if(response.data === "Comment must be between 1 and 140 characters"){
+                alert("Comment has to be less than 140 characters");
+                return;
+            }
+            setCommentText('');
+            setTexterror(null);
+            fetchComments();        
+    }
+    catch (error){
         console.error('Error posting comment:', error);
     }
         };
@@ -113,6 +124,7 @@ useEffect(() => {
              />
             )}
             </div>
+            <div id="errorMessage" style={{color: 'red'}}>{textError === null ? '': textError }</div>
     
             <div className="pagination">
                 <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>

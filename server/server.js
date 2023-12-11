@@ -121,36 +121,74 @@ app.get('/tags/byUser/:userId', async (req,res) => {
 })
 
 app.put('/tags/editTag/:tagId', async (req, res) => {
+  const tag_id = req.params.tagId;
+  let tag_name = req.body.name;
+  let userId = req.body.userId
 
-})
-
-app.delete('/tags/deleteTag/:tagId', async (req, res) => {
-  const tagId = req.params.tagId;
-  try{
-    const Tag = await Tags.find({_id: tagId}).exec();
-    console.log(req.session);
-    if(Tag[0].created_by.toString() !== req.session.user && req.session.isAdmin){
-      res.send('Error you are not the owner of the tag');
+  try {
+    const user = await User.findById(userId).exec();
+    console.log(user.isAdmin);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+    tag_name = tag_name.toLowerCase();
+    if (tag_name.length > 10 || tag_name.length < 1) {
+      res.send('Error tag cannot be more than 10 characters or less than 1 character');
+      return;
+  }
+    const tagObj = await Tags.find({ _id: tag_id }).exec();
+    if (tagObj[0].created_by.toString() !== userId && !user.isAdmin) {
+      res.send('Error you are not the owner of this tag');
       return;
     }
-
-    const questionUsingTag = await Question.find({tags: tagId}).exec();
-    for(let i = 0; i < questionUsingTag.length; i++){
-      if(questionUsingTag[i].asked_by.toString() !== Tag[0].created_by.toString()){
-        res.send('Another user is using this tag');
+  
+    const questionUsingTag = await Question.find({ tags: tag_id }).exec();
+    for (let i = 0; i < questionUsingTag.length; i++) {
+      if (questionUsingTag[i].asked_by.toString() !== tagObj[0].created_by.toString()) {
+        res.send('Error another user is using this tag');
         return;
       }
     }
 
-    await Tags.deleteOne({_id: tagId}).exec();
-    await Question.updateMany({}, {tags:tagId}).exec();
-    res.send({success: true});
-  }
-  catch(err){
+    const result = await Tags.updateOne({ _id: tag_id }, { $set: { name: tag_name } }).exec();
+    res.send(result);
+  } catch (err) {
     console.error(err);
     res.status(500).send('Internal Server Error');
   }
 })
+
+app.delete('/tags/deleteTag/:tagId', async (req, res) => {
+  
+  try {
+    const tagId = req.params.tagId;
+    const userId = req.query.userId; 
+    // const user = await User.findById(userId).exec();
+    const Tag = await Tags.findById(tagId).exec();
+    if (!Tag) {
+      return res.status(404).send('Tag not found');
+    }
+    console.log(userId);
+    if (Tag.created_by.toString() !== userId.toString()) {
+      return res.status(403).send('Error: Unauthorized to delete the tag');
+    }
+
+    const questionUsingTag = await Question.find({ tags: tagId }).exec();
+    for (let i = 0; i < questionUsingTag.length; i++) {
+      if (questionUsingTag[i].asked_by.toString() !== Tag.created_by.toString()) {
+        return res.send('Error: Another user is using this tag');
+      }
+    }
+
+    await Tags.deleteOne({ _id: tagId }).exec();
+    await Question.updateMany({ tags: tagId }, { $pull: { tags: tagId } }).exec();
+    res.send({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 //answers
 app.get('/api/answers', async (req,res) => {
@@ -201,7 +239,7 @@ app.post('/api/answers/answerQuestion', async (req,res) =>{
   }
 });
 
-app.patch('/answers/incrementvotes/:answer_id', async (req, res) => {
+app.patch('/answers/incrementvotes/:answer_id' , async (req, res) => {
   try{
     const answer = await Answers.findById(req.params.answer_id);
     const {userId, voteType} = req.body;
@@ -232,7 +270,7 @@ app.patch('/answers/incrementvotes/:answer_id', async (req, res) => {
 
 })
 
-app.delete('/answers/deleteAnswer/:answerId', async (req, res) =>{
+app.delete('/answers/deleteAnswer/:answerId',  async (req, res) =>{
   try{
     const answer = await Answers.findById(req.params.answerId).exec();
     if(answer){
@@ -259,7 +297,7 @@ app.delete('/answers/deleteAnswer/:answerId', async (req, res) =>{
   }
 })
 
-app.put('/answers/editAnswer/:answerId', async (req, res) => {
+app.put('/answers/editAnswer/:answerId',  async (req, res) => {
   const {answerText, username} = req.body;
     const {answerId} = req.params;
     if(!answerText || !username){
@@ -472,7 +510,7 @@ async function incrementViews(questionId) {
     
   })
 
-  app.get('/questions/byUser/:userId', async (req, res) => {
+  app.get('/questions/byUser/:userId',async (req, res) => {
     try{
       const questions = await Question.find({asked_by: req.params.userId}).sort
       ({ask_date_time: -1}).exec();
@@ -484,7 +522,7 @@ async function incrementViews(questionId) {
     }
   })
 
-  async function getNewTag(input_tag){
+  async function getNewTag(input_tag, username){
     var tagIdArray = [];
     var tagArray = input_tag.toLowerCase().split(" ");
     var existingTagSet = new Set();
@@ -497,7 +535,8 @@ async function incrementViews(questionId) {
       }
       else{
           const newTag = new Tags({
-            name: tagName
+            name: tagName,
+            created_by: username
           });
             await newTag.save();
             existingTagSet.add(newTag._id); 
@@ -520,7 +559,7 @@ async function incrementViews(questionId) {
       title: title,
       summary: summary,
       text: text,
-      tags: await getNewTag(tags),
+      tags: await getNewTag(tags, username),
       asked_by: username,
     }
     const questionInstance = new Question(newQuestion);
@@ -660,20 +699,11 @@ async function incrementViews(questionId) {
   }
   })
 
-  async function addCommentToAnswers(answer, comment){
-    answer.comments.push(comment);
-    await answer.save();
-  }
-  async function addCommentToQuestions(question, comment){
-    question.comments.push(comment);
-    await question.save();
-  }
-
   app.post('/postComments', async (req, res) => {
     try{
       const {text, userId, id, commentType} = req.body;
       // let newCommentInput = req.body;
-      // newCommentInput.created_by = req.session.user.userId;
+      // newCommentInput.created_by = req.session.user.user_id;
       const user = await User.findById(userId).exec();
       if(user.reputation < 50){
         res.send('User reputation is too low');
@@ -702,6 +732,15 @@ async function incrementViews(questionId) {
       console.error("Comment cannot be posted:", error)
     }
   })
+
+  async function addCommentToAnswers(answer, comment){
+    answer.comments.push(comment);
+    await answer.save();
+  }
+  async function addCommentToQuestions(question, comment){
+    question.comments.push(comment);
+    await question.save();
+  }
 
   app.patch('/comments/incrementvotes/:comment_id', async (req, res) => {
     try{
@@ -767,6 +806,9 @@ async function incrementViews(questionId) {
     const { email, password } = req.body;
     try {
       const user = await User.findOne({ email }).exec();
+      if(!user){
+        res.status(403).json({ success: false, message: 'Invalid email' })
+      }
       if (await bcrypt.compare(password, user.password)) {
         const sessionUser = {
           loggedIn: true,
@@ -774,7 +816,7 @@ async function incrementViews(questionId) {
           email: user.email,
           userId: user._id,
           reputation: user.reputation,
-          created_by: user.created_by,
+          created_date: user.created_date,
           isAdmin: user.isAdmin,
         };
         req.session.user = sessionUser;

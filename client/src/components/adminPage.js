@@ -26,7 +26,6 @@ function getTimeLength(date){
 
 function AdminPage({user, updatePage}){
     const [userList, setuserList] = useState([]);
-    const [warning, setWarning] = useState({warning:false, userId: ''});
 
     useEffect(() => {
         axios.get("http://localhost:8000/api/users").then((response) => {
@@ -55,6 +54,7 @@ function AdminPage({user, updatePage}){
                     <div key={index}>
                         <div className="flex-container">
                             <div className="middle-column">
+                                {console.log(userEntry)}
                                 <button className='userLink' onClick={()=>{updatePage("userPage", userEntry)}}>
                                     {userEntry.username}
                                 </button>
@@ -63,7 +63,7 @@ function AdminPage({user, updatePage}){
                             <div className="left-column2">
                             
                                 <button className="deleteButton" disabled = {userEntry.isAdmin === true}  
-                                onClick={()=>{handleDeleteClick(userEntry._id)}}> Delete </button>
+                                onClick={()=>{handleDeleteClick(userEntry.userId)}}> Delete </button>
                             </div>
                          </div>
                     </div>

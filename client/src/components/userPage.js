@@ -90,6 +90,8 @@ function UserPage({user, updatePage}){
         })
     }
 
+    {console.log(user._id)}
+
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
       };
@@ -109,10 +111,6 @@ function UserPage({user, updatePage}){
                         <div className="flex-container">
                             <div className='left-column2'>
                                 <button className="userLink" onClick={() => {updatePage('questionForm', questionEntry._id, questionEntry)}}>{questionEntry.title}</button>
-                                <button className="displayButton"
-                                onClick={() => {handleTags(user._id)}}>All Tags Created by {user.username}</button>
-                                <button className="displayButton"
-                                onClick={() => {handleQuestionAnswer(user._id)}}>All Questions {user.username} Answered</button>
                             </div>
                             <div className="middle-column">
                                 asked {formatQuestionDate(questionEntry.ask_date_time)}
@@ -129,6 +127,12 @@ function UserPage({user, updatePage}){
                     </div>
                 )
                 }
+                <span>
+                <button className="displayButton"
+                    onClick={() => {handleTags(user._id)}}>All Tags Created by {user.username}</button>
+                    <button className="displayButton"
+                    onClick={() => {handleQuestionAnswer(user._id)}}>All Questions {user.username} Answered</button>
+                </span>
                 </div>
             
             <div className="pagination">

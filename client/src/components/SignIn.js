@@ -10,12 +10,6 @@ function SignIn({ onSignInSuccess }) {
   const [user, setUser] = useState(null);
   let isMounted = true;
 
-  useEffect(() => {
-    return () => {
-      isMounted = false;
-    };
-  }, []); 
-
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -34,27 +28,33 @@ function SignIn({ onSignInSuccess }) {
         password,
       }, { withCredentials: true });
 
-      if (isMounted) {
+      // if (isMounted) {
         if (response.data.success) {
           // Assuming response.data.user contains session info
           setUser(response.data.user);
-          setRedirectToFakeStackOverflow(true);
+          // setRedirectToFakeStackOverflow(true);
           onSignInSuccess(response.data.user);
         } else {
           setError(response.data.message || 'Invalid credentials');
         }
-      }
+      //}
     } catch (error) {
-      if (isMounted) {
+      //if (isMounted) {
         if (error.response) {
           console.error('Error response:', error.response.data);
           setError(error.response.data.message || 'Invalid credentials');
         } else {
           setError('Error during sign-in. Please try again.');
         }
-      }
+      //}
     }
   };
+
+  // useEffect(() => {
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, []); 
 
   if (redirectToFakeStackOverflow) {
     return <MainPage username={user} />;
@@ -68,7 +68,7 @@ function SignIn({ onSignInSuccess }) {
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={styles.input} />
         <label style={styles.label}>Password:</label>
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
-        <button style={styles.button} onClick={handleSignIn}>
+        <button style={styles.button} onClick={() => {handleSignIn()}}>
           Sign In
         </button>
         {error && <p style={{ color: 'red', fontSize: '20px' }}>{error}</p>}

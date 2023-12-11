@@ -126,6 +126,8 @@ async function populate() {
             let user = await userCreate(username, email, hashPassword, isAdmin, created_by, reputation);
             users.push(user)
         }
+        
+        
 
         const tags = [];
         for(let i = 0; i < 10; i++){
@@ -133,9 +135,20 @@ async function populate() {
             tags.push(tag);
         }
 
+        function randomUniqueTags() {
+            const tags2 = [];
+            while (tags2.length < 3) {
+              const tag = random(tags);
+              if (!tags2.includes(tag)) {
+                tags2.push(tag);
+              }
+            }
+            return tags2;
+          }
+
         const comments = [];
         for(let i = 0; i < 10; i++){
-            const text = `Comment${i} ${random(dummyText)}`;
+            const text = `Comment ${i} ${random(dummyText)}`;
             const created_by = random(users);
             const created_date = new Date();
             const votes = 0;
@@ -143,13 +156,26 @@ async function populate() {
             comments.push(comment);
         }
 
+        async function comCreateMany() {
+            const comments = [];
+            for (let i = 0; i < 4; i++) {
+              const text = `Comment ${i} ${random(dummyText)} ${random(dummyText)} `;
+              const created_by = random(users);
+              const created_date = new Date();
+              const votes = 0;
+              const comment = await commentCreate(text, created_by, created_date, votes);
+              comments.push(comment);
+            }
+            return comments;
+          }
+
         const answers = [];
         for(let i = 0; i < 24; i++){
             const text = `Answer ${i}: ${random(dummyText)} ${random(dummyText)}`;
             const ans_by = random(users);
             const ans_date_time = new Date();
             const votes = 0;
-            const answerComment = [random(comments), random(comments)];
+            const answerComment = await comCreateMany();
             const answer = await answerCreate(text, ans_by, ans_date_time, votes, answerComment);
             answers.push(answer); 
         }
@@ -168,7 +194,7 @@ async function populate() {
             const title = `Question Title #${i}: ${random(dummyText)}`;
             const summary = `This is the summary of question ${i}: ${random(dummyText)} ${random(dummyText)}`;
             const text = `Text of question ${i}: ${random(dummyText)} ${random(dummyText)} `
-            const questionTags = [random(tags)];
+            const questionTags = randomUniqueTags();
             const questionAnswers = [];
             let [min, max] = getRandomRange(0 , answers.length);
             for(let j = min; j < max; j++){

@@ -180,7 +180,7 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ, user}){
 
             <p className="question_summary"> {questionEntry.summary}</p>
             </div>
-            <Comment questionID={questionEntry._id} user={user} updatePage={updatePage} commentType={'question'} isAthQ={isAuthQ}/>
+            <Comment questionID={questionEntry._id} user={user} updatePage={updatePage} commentType={'question'} questions={Questions}isAthQ={isAuthQ}/>
             <div>
               {getTagNames(questionEntry.tags).map((tagName, index) => (
                   <span key={index} className="tag">{tagName}</span>

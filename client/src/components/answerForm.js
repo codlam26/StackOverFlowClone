@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import axios from 'axios';
 
 function AnswerForm({updatePage, question_id, user, editAnswer}){
-      const [username, setUsername] = useState(user);
+      const [username, setUsername] = useState(user.userId);
       const [answerText, setAnswerText] = useState(editAnswer?.text || "");
       const [hyperlinkError, setHyperlinkError] = useState(null);
       

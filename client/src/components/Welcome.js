@@ -11,6 +11,7 @@ function WelcomePage() {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+
   // Function to handle successful authentication
   const handleAuthAccess = (userData) => {
     setUser(userData);
@@ -41,20 +42,25 @@ function WelcomePage() {
   };
 
   useEffect(() => {
-    // Fetch session data when the component mounts
     axios.get('http://localhost:8000/session', { withCredentials: true })
-      .then(response => {
-        if (response.data && response.data.loggedIn) {
-          handleAuthAccess(response.data);
-          console.log(response.data);
-        }
-      })
-      .catch(error => console.error('Error fetching session:', error));
-  }, []);
+        .then(response => {
+            if (response.data && response.data.loggedIn) {
+                handleAuthAccess(response.data);
+            }
+        })
+        .catch(error => console.error('Error fetching session:', error));
+}, []);
+
+useEffect(() => {
+  if (isAuthenticated) {
+      // Additional logic if needed after authentication
+  }
+}, [isAuthenticated, user]);
 
   if (isAuthenticated) {
     return <MainPage isAuthenticated={true} username={user}/>;
-  } else if (redirectToFakeStackOverflow) {
+  } 
+  else if (redirectToFakeStackOverflow) {
     return <MainPage isAuthenticated={false} username={null}/>;
   }
 
@@ -67,7 +73,7 @@ function WelcomePage() {
         <p style={{ fontSize: '20px', margin: '12px 0', textAlign: 'left' }}>✅ Unlock new privileges like voting and commenting</p>
         <p style={{ fontSize: '20px', margin: '12px 0', textAlign: 'left' }}>🗃️ Save your favorite questions, answers, watch tags, and more</p>
         <p style={{ fontSize: '20px', margin: '12px 0 20px', textAlign: 'left' }}>🎗️ Earn reputation</p>
-        <h1 style={{ fontSize: '55px', margin: '30px', fontFamily: 'Arial Rounded MT Bold' }}></h1>
+        <h1 style={{ fontSize: '55px', margin: '30px', fontFamily: 'Arial Rounded MT Bold' }}> </h1>
         <div>
           <button className='WelcomeButtonStyle' onClick={handleSignInClick}>Sign In</button>
           <br />
@@ -78,7 +84,7 @@ function WelcomePage() {
       </div>
       <div style={{ flex: 1, backgroundColor: 'white', padding: '20px' }}>
         {showSignIn && <SignIn onSignInSuccess={handleAuthAccess}/>}
-        {showSignUp && <SignUp onAuthAccess={handleAuthAccess} onSignInSuccess={showSignInPage}/>}
+        {showSignUp && <SignUp onAuthAccess={handleAuthAccess} onSignInSuccess={() => showSignInPage(true)}/>}
       </div>
     </div>
   );
