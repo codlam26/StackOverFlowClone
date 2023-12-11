@@ -42,5 +42,11 @@ Password: password123
 
 ```
 ## Team Member 1 Contribution
-
+```
+Cody Lam:
+- Created the init.js
+- Created the admin and user Page
+- Created the backend for Delete && Put endpoints for Question, Tags, and Answers
+- Created the backend/frontend of comments
+```
 ## Team Member 2 Contribution
