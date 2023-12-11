@@ -1,7 +1,7 @@
 Add design docs in *images/*
 
 ## Instructions to setup and run project
-First install all the dependicies for the project:
+First install all the dependencies for the project:
 
 Initialize the database by running this command:
 ```
