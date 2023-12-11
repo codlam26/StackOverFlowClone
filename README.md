@@ -4,17 +4,27 @@ Add design docs in *images/*
 First install all the dependicies for the project:
 
 Initialize the database by running this command:
-![Alt text](image.png)
+```
+#Has to be in the server directory
+$node init.js <admin_email> <password_of_admin>
+```
 
 Run the server by running this command:
-![Alt text](image-1.png)
+```
+#Has to be in the server directory
+$npm start <secretKey>
+#Example: npm start secretkey
+```
 The secretKey can be anything you want, Ex. npm start secret
 
 Then on a seperate terminal run this command on the client directory:
-![Alt text](image-2.png)
+```
+#Has to be in the client directory
+$npm start
+```
 
 Login Information
-'''
+```
 Email: user1@gmail.com
 Password: password123
 
@@ -26,7 +36,7 @@ Password: password123
 
 #You can look at the user stats on the client to see their reputations and other information
 
-'''
+```
 ## Team Member 1 Contribution
 
 ## Team Member 2 Contribution
