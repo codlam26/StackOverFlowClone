@@ -37,7 +37,7 @@ function MainPage({ isAuthenticated, username}){
         setActiveLink(" ");
     }
 
-    const updateQuestionsView = (newView, data, editQuestion, isUserSpecificTags = false) => {
+    const updateQuestionsView = (newView, data, editQuestion) => {
       setCurrentView(newView);
       if(newView === 'tagsList'){
           setTags(data);
@@ -55,10 +55,10 @@ function MainPage({ isAuthenticated, username}){
       setEditFeature(editQuestion);
     }
 
-    const updateUserView = (newView, user) => {
-      setCurrentView(newView);
-      setUser(user);
-  }
+  //   const updateUserView = (newView, user) => {
+  //     setCurrentView(newView);
+  //     setUser(user);
+  // }
   const updateTagPage = (newView, updatedTagsList) => {
     // Update the current view
     setCurrentView(newView);
@@ -81,7 +81,6 @@ function MainPage({ isAuthenticated, username}){
 
     useEffect(() => {
       fetchNewestQuestions();
-      fetchAllTags();
     }, []);
 
     const fetchAllTags = async () => {
@@ -168,7 +167,7 @@ function MainPage({ isAuthenticated, username}){
                     <AnswerList updatePage = {updateCurrentView} question_id={questionID} isAuthQ={isAuthenticated} user={username}/>}
 
                 {currentView === 'tagsList' && 
-                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated} editTag={editFeature}/>}
+                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated}/>}
   
                  {currentView === 'questionForm' &&
                     <QuestionForm updatePage = {updateQuestionsView} user={username} editQuestion={editFeature}/>}
@@ -183,7 +182,7 @@ function MainPage({ isAuthenticated, username}){
                     <UserPage user={user} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'adminPage' && username.isAdmin === true &&
-                    <AdminPage user={username} updatePage={updateUserView}/>}
+                    <AdminPage user={username} updatePage={updateQuestionsView}/>}
             </td>
           </tr>
         </tbody>

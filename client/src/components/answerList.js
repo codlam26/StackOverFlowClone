@@ -59,8 +59,8 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
         });
     }, [question_id])
 
-    useEffect( async ()=>{
-        await axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
+    useEffect( ()=>{
+        axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
             setquestion(res.data);
         });
     }, [question_id])
@@ -84,7 +84,7 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
         };
   
         fetchUsernames();
-    }, [answers]);
+    }, []);
 
     const renderTextWithHyperlinks = (text) => {
         return text.split(/(\[.*?\]\(.*?\))/g).map((part, index) => {

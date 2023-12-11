@@ -89,9 +89,7 @@ function UserPage({user, updatePage}){
             updatePage('tagsList', response.data);
         })
     }
-
-    {console.log(user._id)}
-
+    
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
       };

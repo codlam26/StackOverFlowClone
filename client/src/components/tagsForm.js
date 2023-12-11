@@ -2,14 +2,14 @@ import React ,{useState, useEffect} from "react";
 import axios from "axios";
 
 function TagsForm({user, updatePage, editTag}){
-    const [tags, setTags] = useState (editTag?.name.trim()||"");
+    const [tags, setTags] = useState (editTag?.name||"");
     const [tagsList, setTagsList] = useState({});
     const [username, setUserName] = useState (user)
     const [tagError, setTagError] = useState(null);
 
     const handlePostTag = (event) => {
         event.preventDefault();
-        const updatedTag = { name: tags.trim(), userId: user._id };
+        const updatedTag = { name: tags, userId: user._id };
         axios.put(`http://localhost:8000/tags/editTag/${editTag._id}`, updatedTag)
             .then((response) => {
                 if(response.data === "Error another user is using this tag"){
@@ -42,7 +42,7 @@ function TagsForm({user, updatePage, editTag}){
     
     useEffect(() => {
         fetchAllTags();
-    }, []);
+    }, [editTag, user]);
 
     return(
         <form id="tag-form" onSubmit={handlePostTag}>

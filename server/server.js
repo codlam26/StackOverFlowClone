@@ -170,19 +170,21 @@ app.delete('/tags/deleteTag/:tagId', async (req, res) => {
     }
     console.log(userId);
     if (Tag.created_by.toString() !== userId.toString()) {
-      return res.status(403).send('Error: Unauthorized to delete the tag');
+      res.status(403).send('Error: Unauthorized to delete the tag');
+      return;
     }
 
     const questionUsingTag = await Question.find({ tags: tagId }).exec();
     for (let i = 0; i < questionUsingTag.length; i++) {
       if (questionUsingTag[i].asked_by.toString() !== Tag.created_by.toString()) {
-        return res.send('Error: Another user is using this tag');
+        res.send('Error: Another user is using this tag');
+        return;
       }
     }
 
     await Tags.deleteOne({ _id: tagId }).exec();
     await Question.updateMany({ tags: tagId }, { $pull: { tags: tagId } }).exec();
-    res.send({ success: true });
+    res.json({ success: true, message: 'Tag deleted successfully' });
 
   } catch (err) {
     console.error(err);

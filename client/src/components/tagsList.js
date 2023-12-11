@@ -1,44 +1,39 @@
 import React, {useState, useEffect } from "react";
 import axios from "axios";
 
-function TagsList({newTags, updatePage, answerPage, isAuthQ, user, editTag}){
-    const [tags, setTags] = useState([]);
+function TagsList({newTags, updatePage, answerPage, isAuthQ, user}){
+    const [tags, setTags] = useState(newTags);
     const [questionCounts, setQuestionCounts] = useState({});
     const [questions, setquestions] = useState({});
 
-    useEffect(() => {
-        axios.get('http://localhost:8000/questions/newest/').then((response) =>{
-        setquestions(response.data.reduce((acc, question) => {
-            acc[question._id] = question;
-            return acc;
-        }, {}));
-    })
-    },[])
+    console.log(newTags);
+
+    // useEffect(() => {
+    //     axios.get('http://localhost:8000/questions/newest/').then((response) =>{
+    //     setquestions(response.data.reduce((acc, question) => {
+    //         acc[question._id] = question;
+    //         return acc;
+    //     }, {}));
+    // })
+    // },[])
+
+    // useEffect(() => {
+    //     QuestionCounts(tags);
+    // },[tags])
 
     useEffect(() => {
-        QuestionCounts(newTags);
-    },[])
+        const fetchQuestionsCount = async () => {
+            const counts = await Promise.all(newTags.map(async (tag) => {
+                const response = await axios.get(`http://localhost:8000/tag_id/${tag._id}/questions`);
+                return { [tag._id]: response.data.length };
+            }));
+            
+            setQuestionCounts(counts.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
+        };
 
-    const QuestionCounts = (tags) => {
-        const tagIds = tags.map((tag)=> tag._id);
-        
-        tagIds.forEach((tagId) => {
-            axios.get(`http://localhost:8000/tag_id/${tagId}/questions`).then((response) => {
-                setquestions((prevQuestions) => {
-                    const updatedQuestions = {...prevQuestions};
+        fetchQuestionsCount();
+    }, [newTags]);
 
-                    response.data.forEach((question) => {
-                        updatedQuestions[question._id] = question;
-                    });
-                    return updatedQuestions;
-                });
-                setQuestionCounts((prevCounts) => ({
-                    ...prevCounts,
-                    [tagId]: response.data.length,
-                }));
-            });
-        });
-    };
 
     const handleClick = async (tagId) => {
         try {
@@ -55,14 +50,34 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user, editTag}){
           console.error('Error fetching questions for tag:', error);
         }
       };    
-      console.log(user._id);
+      
       const handleDeleteClick = async (tagId) => {
-        axios.delete(`http://localhost:8000/tags/deleteTag/${tagId}?userId=${user._id}`).then(async (response) => {
+        try{
+            const response = await axios.delete(`http://localhost:8000/tags/deleteTag/${tagId}?userId=${user._id}`);
             if(response.data === 'success'){
                 const updatedTagList = tags.filter((tag) => tag._id !== tagId);
-                setTags(updatedTagList); 
+                setTags(updatedTagList);
+                console.log(response.data);
             }
-        })
+            else if(response.data === 'Error: Unauthorized to delete the tag'){
+                alert('Error: Unauthorized to delete the tag');
+                return;
+            }
+            else if(response.data === 'Error: Another user is using this tag'){
+                alert('Error: Another user is using this tag');
+                return;
+            }
+        }    
+        catch(err){
+            console.error('Error deleting tag:', err);
+            if (err.response) {
+              // Handle errors sent back from the server
+              alert(err.response.data.message);
+            } else {
+              alert('Error deleting tag');
+            }
+        }   
+        
     }
 
     return(
@@ -75,16 +90,16 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user, editTag}){
 
             <div id="tagList" className="tag-container">
                 
-                { newTags.map((tagEntry) =>
+                {newTags.map((tagEntry) =>
                      <div className="tagBox" key={tagEntry._id}>
                         <button className="link-style-button" onClick={() => {handleClick(tagEntry._id)}}>
                         {tagEntry.name}
                 </button>
                 <div>{questionCounts[tagEntry._id]} Questions </div>
             
-                {(tagEntry.created_by === user._id || user.isAdmin) && 
+                {(tagEntry.created_by === user._id || user.isAdmin ) && 
                     (<div>
-                        <button className='editButton' onClick={() => updatePage('tagsForm', null, tagEntry)}>Edit</button>
+                        <button className='editButton' onClick={() => updatePage('tagsForm', tags, tagEntry)}>Edit</button>
                         <button className='deleteButton' onClick={() => {handleDeleteClick(tagEntry._id)}}>Delete</button>
                     </div>)
                 }
