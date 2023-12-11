@@ -21,6 +21,7 @@ function MainPage({ isAuthenticated, username}){
     const [tags, setTags] = useState([]);
     const [editFeature, setEditFeature] = useState(null);
     const [isLoggedOut, setIsLoggedOut] = useState(false);
+    
 
     const handleSignUp = () => {
       setRedirectWelcome(true)
@@ -28,6 +29,13 @@ function MainPage({ isAuthenticated, username}){
 
     const navigateTo = (view) => {
         setCurrentView(view);
+    }
+
+    const updateUserView = (newView, newuser) => {
+      console.log(newView);
+      console.log(newuser);
+      setCurrentView(newView);
+      setUser(newuser);
     }
 
     const updateCurrentView = (newView, questionID, editAnswer) => {
@@ -55,19 +63,15 @@ function MainPage({ isAuthenticated, username}){
       setEditFeature(editQuestion);
     }
 
-  //   const updateUserView = (newView, user) => {
-  //     setCurrentView(newView);
-  //     setUser(user);
-  // }
-  const updateTagPage = (newView, updatedTagsList) => {
-    // Update the current view
-    setCurrentView(newView);
 
-    // Update the tags data if provided
+  const updateTagPage = (newView, updatedTagsList) => {
+    setCurrentView(newView);
     if (updatedTagsList) {
         setTags(updatedTagsList);
     }
 };
+  
+
     const fetchNewestQuestions = async () => {
       try {
         const response = await axios.get('http://localhost:8000/questions/newest');
@@ -75,7 +79,6 @@ function MainPage({ isAuthenticated, username}){
         setCurrentView('questionList');
         setActiveLink('questions');
       } catch (error) {
-        console.error(error);
       }
     };
 
@@ -125,14 +128,14 @@ function MainPage({ isAuthenticated, username}){
 
           {isAuthenticated ? (
             <button
-              onClick={handleLogOut}
+              onClick={() =>{handleLogOut()}}
               className="signUpButton"
             >
               Log Out
             </button>
           ) : (
             <button
-              onClick={handleSignUp}
+              onClick={()=> {handleSignUp()}}
               className="signUpButton"
             >
               Sign Up
@@ -182,7 +185,7 @@ function MainPage({ isAuthenticated, username}){
                     <UserPage user={user} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'adminPage' && username.isAdmin === true &&
-                    <AdminPage user={username} updatePage={updateQuestionsView}/>}
+                    <AdminPage user={user} updatePage={updateUserView}/>}
             </td>
           </tr>
         </tbody>

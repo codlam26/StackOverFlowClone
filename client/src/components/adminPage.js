@@ -54,8 +54,7 @@ function AdminPage({user, updatePage}){
                     <div key={index}>
                         <div className="flex-container">
                             <div className="middle-column">
-                                {console.log(userEntry)}
-                                <button className='userLink' onClick={()=>{updatePage("userPage", userEntry)}}>
+                                <button className='userLink' onClick={()=>{{console.log(userEntry)};updatePage("userPage", userEntry)}}>
                                     {userEntry.username}
                                 </button>
                             </div>
@@ -63,7 +62,7 @@ function AdminPage({user, updatePage}){
                             <div className="left-column2">
                             
                                 <button className="deleteButton" disabled = {userEntry.isAdmin === true}  
-                                onClick={()=>{handleDeleteClick(userEntry.userId)}}> Delete </button>
+                                onClick={()=>{handleDeleteClick(userEntry._id)}}> Delete </button>
                             </div>
                          </div>
                     </div>

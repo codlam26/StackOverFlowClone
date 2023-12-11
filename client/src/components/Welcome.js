@@ -75,11 +75,11 @@ useEffect(() => {
         <p style={{ fontSize: '20px', margin: '12px 0 20px', textAlign: 'left' }}>🎗️ Earn reputation</p>
         <h1 style={{ fontSize: '55px', margin: '30px', fontFamily: 'Arial Rounded MT Bold' }}> </h1>
         <div>
-          <button className='WelcomeButtonStyle' onClick={handleSignInClick}>Sign In</button>
+          <button className='WelcomeButtonStyle' onClick={() =>{handleSignInClick()}}>Sign In</button>
           <br />
-          <button className='WelcomeButtonStyle' onClick={handleSignUpClick}>Sign Up</button>
+          <button className='WelcomeButtonStyle' onClick={() => {handleSignUpClick()}}>Sign Up</button>
           <br />
-          <button className='WelcomeButtonStyle' onClick={handleGuestClick}>Continue as Guest</button>
+          <button className='WelcomeButtonStyle' onClick={() =>{handleGuestClick()}}>Continue as Guest</button>
         </div>
       </div>
       <div style={{ flex: 1, backgroundColor: 'white', padding: '20px' }}>

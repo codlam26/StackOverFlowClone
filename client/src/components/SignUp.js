@@ -88,7 +88,7 @@ function SignUp({ onAuthAccess, onSignInSuccess}){
             ))}
           </div>
         )}
-        <button style={styles.button} onClick={handleSignUp}>
+        <button style={styles.button} onClick={() => {handleSignUp()}}>
           Sign Up
         </button>
       </div>
