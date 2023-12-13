@@ -38,7 +38,7 @@ Password: password123
 Email: user3@gmail.com
 Password: password123
 
-#You can look at the user stats on the client to see their reputations and other information and I made the Admin delete or edit anything
+#You can look at the user stats on the client to see their reputations and other information
 
 ```
 ## Team Member 1 Contribution
@@ -46,7 +46,7 @@ Password: password123
 Cody Lam:
 - Created the init.js
 - Created the admin and user Page
-- Created the backend for Delete && Put endpoints for Question, Tags, and Answers
+- Created the backend/frontend for delete && put && get endpoints for Question, Tags, and Answers
 - Created the backend/frontend of comments
 ```
 ## Team Member 2 Contribution

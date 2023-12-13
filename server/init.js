@@ -107,8 +107,7 @@ const random = (list2) => list2[randomIndex(list2)];
 
 async function populate() {
     try{
-        
-            await db.dropDatabase();    
+        await db.dropDatabase();    
         const hashedPassword_admin = await bcrypt.hash(userArgs[1], 10);
         let admin_user = await userCreate('Admin', userArgs[0], hashedPassword_admin, true, new Date(), 1000);
         admin_user.save();
@@ -127,15 +126,13 @@ async function populate() {
             users.push(user)
         }
         
-        
-
         const tags = [];
         for(let i = 0; i < 10; i++){
             let tag = await tagCreate(`tag${i}`, users[i % 3]);
             tags.push(tag);
         }
 
-        function randomUniqueTags() {
+        function randomTags() {
             const tags2 = [];
             while (tags2.length < 3) {
               const tag = random(tags);
@@ -156,7 +153,7 @@ async function populate() {
             comments.push(comment);
         }
 
-        async function comCreateMany() {
+        async function manyRandomComments() {
             const comments = [];
             for (let i = 0; i < 4; i++) {
               const text = `Comment ${i} ${random(dummyText)} ${random(dummyText)} `;
@@ -175,7 +172,7 @@ async function populate() {
             const ans_by = random(users);
             const ans_date_time = new Date();
             const votes = 0;
-            const answerComment = await comCreateMany();
+            const answerComment = await manyRandomComments();
             const answer = await answerCreate(text, ans_by, ans_date_time, votes, answerComment);
             answers.push(answer); 
         }
@@ -194,7 +191,7 @@ async function populate() {
             const title = `Question Title #${i}: ${random(dummyText)}`;
             const summary = `This is the summary of question ${i}: ${random(dummyText)} ${random(dummyText)}`;
             const text = `Text of question ${i}: ${random(dummyText)} ${random(dummyText)} `
-            const questionTags = randomUniqueTags();
+            const questionTags = randomTags();
             const questionAnswers = [];
             let [min, max] = getRandomRange(0 , answers.length);
             for(let j = min; j < max; j++){
