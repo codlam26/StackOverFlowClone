@@ -209,7 +209,7 @@ function AnswerList({updatePage, question_id, isAuthQ, user, userId}){
                     
                     <button className="voteButton"  onClick={() => handleVote(answerEntry._id, 'upvote')}>⬆</button>
                     <br/>
-                    <span>{answerEntry.votes} Votes</span>
+                    <span>{votes[answerEntry._id] || answerEntry.votes} Votes</span>
                     <br/>
                     <button className="voteButton" onClick={() => handleVote(answerEntry._id, 'downvote')}>⬇</button>
                     </div>)}

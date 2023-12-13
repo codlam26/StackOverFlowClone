@@ -17,11 +17,6 @@ function WelcomePage() {
     setIsAuthenticated(true);
   };
 
-  const showSignInPage = () => {
-    setShowSignIn(true);
-    setShowSignUp(false);
-  };
-
   const handleSignInClick = () => {
     setShowSignIn(true);
     setShowSignUp(false);

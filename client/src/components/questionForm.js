@@ -42,7 +42,7 @@ function QuestionForm({updatePage, user, editQuestion}){
       }).catch(error => {
           console.error(error);
       });
-  }, []);
+  }, [user]);
 
   useEffect(() => {
       if (editQuestion && editQuestion.tags) {

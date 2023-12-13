@@ -1,14 +1,14 @@
-import React ,{useState, useEffect} from "react";
+import React ,{useState} from "react";
 import axios from "axios";
 
 function TagsForm({user, updatePage, editTag, userId}){
     const [tags, setTags] = useState (editTag?.name||"");
-    const [username, setUserName] = useState (user)
+    const [username, setUserName] = useState (user.userId)
     const [tagError, setTagError] = useState(null);
     
     const handlePostTag = async (event) => {
         event.preventDefault();
-        const updatedTag = { name: tags, userId: user.userId};
+        const updatedTag = { name: tags, userId: username};
         await axios.put(`http://localhost:8000/tags/editTag/${editTag._id}`, updatedTag)
             .then((response) => {
                 if(response.data === "Error another user is using this tag"){

@@ -43,7 +43,7 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user}){
         };
 
         fetchQuestionsCount();
-    }, [tags]);
+    }, [newTags]);
 
 
     const handleClick = async (tagId) => {

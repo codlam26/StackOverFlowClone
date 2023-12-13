@@ -1,6 +1,5 @@
 // SignUp.jsx
 import React, { useState } from 'react';
-import SignIn from './SignIn'; 
 import axios from 'axios';
 
 function SignUp({onAuthAccess, onSignInSuccess}){
@@ -9,7 +8,6 @@ function SignUp({onAuthAccess, onSignInSuccess}){
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState([]);
-  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,8 +41,6 @@ function SignUp({onAuthAccess, onSignInSuccess}){
         isAdmin: false
       });
       if (response.data.success) {
-        setRedirectToLogin(true);
-        console.log('Sign Up successful!');
         onAuthAccess(response.data.user)
         onSignInSuccess();
   } else {

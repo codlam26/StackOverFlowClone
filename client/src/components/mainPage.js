@@ -17,7 +17,6 @@ function MainPage({ isAuthenticated, username}){
     const [questionID, setquestionID] = useState([]);
     const [questions, setQuestions] = useState([]);
     const [redirectWelcome, setRedirectWelcome] = useState(false);
-    const [user, setUser] = useState(username);
     const [userId, setUserId] = useState(username ? username.userId : null);
     const [tags, setTags] = useState([]);
     const [editFeature, setEditFeature] = useState(null);
@@ -87,13 +86,6 @@ function MainPage({ isAuthenticated, username}){
       setCurrentView(newView);
       setEditFeature(editQuestion);
     }
-
-  const updateTagPage = (newView, updatedTagsList) => {
-    setCurrentView(newView);
-    if (updatedTagsList) {
-        setTags(updatedTagsList);
-    }
-};  
     
     const handleLogOut = async () => {
       try {
@@ -176,16 +168,16 @@ function MainPage({ isAuthenticated, username}){
                     <QuestionForm updatePage = {updateQuestionsView} user={username} editQuestion={editFeature}/>}
 
                 {currentView === 'answerForm' && 
-                    <AnswerForm updatePage = {updateCurrentView} question_id={questionID} user={user} editAnswer={editFeature}/>}
+                    <AnswerForm updatePage = {updateCurrentView} question_id={questionID} user={username} editAnswer={editFeature}/>}
                 
                 {currentView === 'tagsForm' &&
-                    <TagsForm editTag={editFeature} user={user} userId={userId} sessionUser={username} updatePage={updateQuestionsView}/>}
+                    <TagsForm editTag={editFeature} user={username} userId={userId} sessionUser={username} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'userPage' &&
                     <UserPage user_id={userId} sessionUser={username} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'adminPage' && username.isAdmin === true &&
-                    <AdminPage user={user} updatePage={updateUserView}/>}
+                    <AdminPage user={username} updatePage={updateUserView}/>}
             </td>
           </tr>
         </tbody>
