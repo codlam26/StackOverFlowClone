@@ -63,7 +63,7 @@ function QuestionList({Questions, updatePage, answerPage, isAuthQ, user}){
 
     const handleVote = async (questionId, voteType) => {
       try{
-        const userId = user._id;
+        const userId = user.userId;
         const response = await axios.patch(`http://localhost:8000/questions/incrementvotes/${questionId}`,{
           userId, voteType
         });

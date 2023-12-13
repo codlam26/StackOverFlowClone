@@ -1,16 +1,15 @@
 import React ,{useState, useEffect} from "react";
 import axios from "axios";
 
-function TagsForm({user, updatePage, editTag}){
+function TagsForm({user, updatePage, editTag, userId}){
     const [tags, setTags] = useState (editTag?.name||"");
-    const [tagsList, setTagsList] = useState({});
     const [username, setUserName] = useState (user)
     const [tagError, setTagError] = useState(null);
-
-    const handlePostTag = (event) => {
+    
+    const handlePostTag = async (event) => {
         event.preventDefault();
-        const updatedTag = { name: tags, userId: user._id };
-        axios.put(`http://localhost:8000/tags/editTag/${editTag._id}`, updatedTag)
+        const updatedTag = { name: tags, userId: user.userId};
+        await axios.put(`http://localhost:8000/tags/editTag/${editTag._id}`, updatedTag)
             .then((response) => {
                 if(response.data === "Error another user is using this tag"){
                     setTagError("Error another user is using this tag");
@@ -20,29 +19,17 @@ function TagsForm({user, updatePage, editTag}){
                     setTagError("Error you are not the owner of this tag");
                     return;
                 }
-                fetchAllTags().then(() => {
-                    updatePage('tagsList', tagsList);
-                });
+                else{
+                    setTags('');
+                    setUserName('');
+                    setTagError(null);
+                }
+            }).then(() => {
+                axios.get(`http://localhost:8000/tags/byUser/${userId}`).then((response) => {
+                    updatePage('tagsList', response.data);
+                })
             })
-            .catch(error => console.error('Error updating tag:', error));
-        
-        setTags('');
-        setUserName('');
-        setTagError(null);
     };
-    
-    const fetchAllTags = async () => {
-        try {
-            const response = await axios.get(`http://localhost:8000/tags/byUser/${user._id}`);
-            setTagsList(response.data);
-        } catch (error) {
-            console.error('Error fetching all tags:', error);
-        }
-    };
-    
-    useEffect(() => {
-        fetchAllTags();
-    }, [editTag, user]);
 
     return(
         <form id="tag-form" onSubmit={handlePostTag}>

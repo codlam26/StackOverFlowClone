@@ -6,7 +6,7 @@ function QuestionForm({updatePage, user, editQuestion}){
     const [text, setText] = useState(editQuestion?.text || '');
     const [tags, setTags] = useState('');
     const [summary, setSummary] = useState(editQuestion?.summary ||'');
-    const [username, setUserName] = useState(user);
+    const [username, setUserName] = useState(user.userId);
     const [allTags, setAllTags] = useState([]);
     const [textError, setTexterror] = useState(null);
     const [tagError, setTagerror] = useState(null);

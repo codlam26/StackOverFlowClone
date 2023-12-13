@@ -38,7 +38,7 @@ Password: password123
 Email: user3@gmail.com
 Password: password123
 
-#You can look at the user stats on the client to see their reputations and other information
+#You can look at the user stats on the client to see their reputations and other information and I made the Admin delete or edit anything
 
 ```
 ## Team Member 1 Contribution

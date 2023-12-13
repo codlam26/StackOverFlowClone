@@ -11,8 +11,7 @@ function Comment({questionID, answerID, commentType, user, updatePage, isAthQ}){
     const commentsPerPage = 3;
     const handleVote = async (commentId, voteType) => {
         try{
-            
-            const userId = user;
+            const userId = user.userId;
             const response = await axios.patch(`http://localhost:8000/comments/incrementvotes/${commentId}`,{
             userId, voteType
             });
@@ -57,7 +56,7 @@ function Comment({questionID, answerID, commentType, user, updatePage, isAthQ}){
         try{
             const response = await axios.post('http://localhost:8000/postComments/', {
                 text: commentText,
-                userId: user,
+                userId: user.userId,
                 id: commentType === 'question' ? questionID : answerID,
                 commentType: commentType,
             });

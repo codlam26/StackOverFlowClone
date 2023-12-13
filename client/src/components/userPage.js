@@ -58,16 +58,22 @@ function formatQuestionDate(askDate2){
          }
        }
 
-function UserPage({user, updatePage}){
+function UserPage({user_id, updatePage}){
     const [questions, setQuestions] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [user, setUser] = useState({}); 
     const questionsPerPage = 5;
 
     useEffect(() => {
-        axios.get(`http://localhost:8000/questions/byUser/${user._id}`).then((response) => {
+        axios.get(`http://localhost:8000/users/getUser/${user_id}`).then(async (response) => {
+            console.log(response.data);
+            setUser(response.data)
+        });
+
+        axios.get(`http://localhost:8000/questions/byUser/${user_id}`).then( async (response) => {
             setQuestions(response.data)
-        })
-    }, [user])
+        });
+    }, [user_id])
 
     const handleDeleteClick = (questionId) => {
         axios.delete(`http://localhost:8000/deleteQuestion/${questionId}`).then(async (response) => {
@@ -89,7 +95,7 @@ function UserPage({user, updatePage}){
             updatePage('tagsList', response.data);
         })
     }
-    
+
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
       };

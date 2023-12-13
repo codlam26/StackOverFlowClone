@@ -26,21 +26,35 @@ function getTimeLength(date){
 
 function AdminPage({user, updatePage}){
     const [userList, setuserList] = useState([]);
+    const [showWarning, setShowWarning] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState(null);
 
     useEffect(() => {
         axios.get("http://localhost:8000/api/users").then((response) => {
             setuserList(response.data)
         })
-    }, [user])
-       
-    const handleDeleteClick = async (userId) => {
-        axios.delete(`http://localhost:8000/users/deleteUser/${userId}`).then(async (response) => {
-            if(response.data === 'success'){
-                const updatedUsersList = userList.filter((user) => user._id !== userId);
+    }, [selectedUserId])
+
+    const handleDeleteClick = (userId) => {
+        setShowWarning(true);
+        setSelectedUserId(userId);
+    }
+
+    const confirmDelete = async () => {
+        axios.delete(`http://localhost:8000/users/deleteUser/${selectedUserId}`).then(async (response) => {
+            if(response.data === "success"){
+                const updatedUsersList = userList.filter((user) => user.userId !== selectedUserId);
                 setuserList(updatedUsersList); 
             }
+            setShowWarning(false);
+            setSelectedUserId(null);
         })
     }
+
+    const cancelDelete = () => {
+        setShowWarning(false);
+        setSelectedUserId(null);
+      };
 
     return (
         <div>
@@ -50,23 +64,33 @@ function AdminPage({user, updatePage}){
             <div className="userStats">All Users: 
                 <div className="flex-container">
                     <div className="middle-column2">
-                    {userList.map((userEntry, index) => (
+                    {userList.length !== 0 ? (userList.map((userEntry, index) => (
                     <div key={index}>
                         <div className="flex-container">
                             <div className="middle-column">
-                                <button className='userLink' onClick={()=>{{console.log(userEntry)};updatePage("userPage", userEntry)}}>
+                                <button className='userLink' onClick={()=>{updatePage("userPage", userEntry._id)}}>
                                     {userEntry.username}
                                 </button>
                             </div>
                             
                             <div className="left-column2">
-                            
                                 <button className="deleteButton" disabled = {userEntry.isAdmin === true}  
-                                onClick={()=>{handleDeleteClick(userEntry._id)}}> Delete </button>
-                            </div>
+                                onClick={()=>{handleDeleteClick(userEntry._id)}}> Delete </button>           
+                            </div>  
                          </div>
-                    </div>
-                ))}
+                    </div>)
+                )) :
+                <div>
+                    <h1>No Users Found</h1>
+                </div>
+                }
+                            {showWarning && (
+                                <div className="warningMessage">
+                                    <p>Are you sure you want to delete this user?</p>
+                                    <button className="confirmButton" onClick={() => {confirmDelete()}}>Confirm</button>
+                                    <button className="deleteButton" onClick={() => {cancelDelete()}}>Cancel</button>
+                                </div>     
+                            )}  
                     </div>
 
                 </div>

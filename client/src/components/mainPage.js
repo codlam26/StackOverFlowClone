@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import QuestionList from "./questionList";
 import TagsList from "./tagsList";
 import AnswerList from "./answerList"
@@ -18,24 +18,47 @@ function MainPage({ isAuthenticated, username}){
     const [questions, setQuestions] = useState([]);
     const [redirectWelcome, setRedirectWelcome] = useState(false);
     const [user, setUser] = useState(username);
+    const [userId, setUserId] = useState(username ? username.userId : null);
     const [tags, setTags] = useState([]);
     const [editFeature, setEditFeature] = useState(null);
     const [isLoggedOut, setIsLoggedOut] = useState(false);
     
+    useEffect(() => {
+      fetchNewestQuestions();
+      fetchAllTags();
+    }, []); 
 
-    const handleSignUp = () => {
+    const fetchAllTags = async () => {
+      try {
+          const response = await axios.get('http://localhost:8000/api/tags/');
+          setTags(response.data);
+          console.log("Tags fetched:", response.data);
+      } catch (error) {
+          console.error('Error fetching all tags:', error);
+      }
+    };
+
+    const fetchNewestQuestions = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/questions/newest');
+        setQuestions(response.data);
+        setCurrentView('questionList');
+        setActiveLink('questions');
+      } catch (error) {
+      }
+    };  
+
+    const handleSignUp = useCallback(() => {
       setRedirectWelcome(true)
-    }
+    },[]);
 
     const navigateTo = (view) => {
         setCurrentView(view);
     }
 
     const updateUserView = (newView, newuser) => {
-      console.log(newView);
-      console.log(newuser);
       setCurrentView(newView);
-      setUser(newuser);
+      setUserId(newuser);
     }
 
     const updateCurrentView = (newView, questionID, editAnswer) => {
@@ -46,10 +69,12 @@ function MainPage({ isAuthenticated, username}){
     }
 
     const updateQuestionsView = (newView, data, editQuestion) => {
-      setCurrentView(newView);
       if(newView === 'tagsList'){
           setTags(data);
           setActiveLink("tags");
+      }
+      else if(newView === 'tagsForm'){
+          setEditFeature(editQuestion);
       }
       else if (Array.isArray(data)) {
           setQuestions(data);
@@ -59,41 +84,16 @@ function MainPage({ isAuthenticated, username}){
           setQuestions(updatedQuestions);
           setActiveLink("questions");
       }
-      
+      setCurrentView(newView);
       setEditFeature(editQuestion);
     }
-
 
   const updateTagPage = (newView, updatedTagsList) => {
     setCurrentView(newView);
     if (updatedTagsList) {
         setTags(updatedTagsList);
     }
-};
-  
-
-    const fetchNewestQuestions = async () => {
-      try {
-        const response = await axios.get('http://localhost:8000/questions/newest');
-        setQuestions(response.data);
-        setCurrentView('questionList');
-        setActiveLink('questions');
-      } catch (error) {
-      }
-    };
-
-    useEffect(() => {
-      fetchNewestQuestions();
-    }, []);
-
-    const fetchAllTags = async () => {
-      try {
-          const response = await axios.get('http://localhost:8000/api/tags/');
-          setTags(response.data);
-      } catch (error) {
-          console.error('Error fetching all tags:', error);
-      }
-  };
+};  
     
     const handleLogOut = async () => {
       try {
@@ -167,10 +167,10 @@ function MainPage({ isAuthenticated, username}){
                     <QuestionList Questions = {questions} updatePage={updateQuestionsView} answerPage={updateCurrentView} isAuthQ={isAuthenticated} user={username}/>
                 }
                 {currentView === 'answerList' &&
-                    <AnswerList updatePage = {updateCurrentView} question_id={questionID} isAuthQ={isAuthenticated} user={username}/>}
+                    <AnswerList updatePage = {updateCurrentView} question_id={questionID} isAuthQ={isAuthenticated} user={username} userId={userId}/>}
 
                 {currentView === 'tagsList' && 
-                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated}/>}
+                    <TagsList newTags={tags} updatePage = {updateQuestionsView} answerPage={updateCurrentView} user={username} isAuthQ={isAuthenticated} userId={userId}/>}
   
                  {currentView === 'questionForm' &&
                     <QuestionForm updatePage = {updateQuestionsView} user={username} editQuestion={editFeature}/>}
@@ -179,10 +179,10 @@ function MainPage({ isAuthenticated, username}){
                     <AnswerForm updatePage = {updateCurrentView} question_id={questionID} user={user} editAnswer={editFeature}/>}
                 
                 {currentView === 'tagsForm' &&
-                    <TagsForm editTag={editFeature} user={user} updatePage={updateTagPage}/>}
+                    <TagsForm editTag={editFeature} user={user} userId={userId} sessionUser={username} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'userPage' &&
-                    <UserPage user={user} updatePage={updateQuestionsView}/>}
+                    <UserPage user_id={userId} sessionUser={username} updatePage={updateQuestionsView}/>}
                 
                 {currentView === 'adminPage' && username.isAdmin === true &&
                     <AdminPage user={user} updatePage={updateUserView}/>}

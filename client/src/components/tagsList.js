@@ -6,58 +6,13 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user}){
     const [questionCounts, setQuestionCounts] = useState({});
     const [questions, setquestions] = useState({});
 
-    console.log(newTags);
-
-    // useEffect(() => {
-    //     axios.get('http://localhost:8000/questions/newest/').then((response) =>{
-    //     setquestions(response.data.reduce((acc, question) => {
-    //         acc[question._id] = question;
-    //         return acc;
-    //     }, {}));
-    // })
-    // },[])
-
-    // useEffect(() => {
-    //     QuestionCounts(tags);
-    // },[tags])
-
-    useEffect(() => {
-        const fetchQuestionsCount = async () => {
-            const counts = await Promise.all(newTags.map(async (tag) => {
-                const response = await axios.get(`http://localhost:8000/tag_id/${tag._id}/questions`);
-                return { [tag._id]: response.data.length };
-            }));
-            
-            setQuestionCounts(counts.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
-        };
-
-        fetchQuestionsCount();
-    }, [newTags]);
-
-
-    const handleClick = async (tagId) => {
-        try {
-          const response = await axios.get(`http://localhost:8000/tag_id/${tagId}/questions`);
-          const updatedQuestions = { ...questions };
-    
-          response.data.forEach((question) => {
-            updatedQuestions[question._id] = question;
-          });
-    
-          setquestions(updatedQuestions);
-          updatePage("questionList", response.data);
-        } catch (error) {
-          console.error('Error fetching questions for tag:', error);
-        }
-      };    
-      
-      const handleDeleteClick = async (tagId) => {
+    const handleDeleteClick = async (tagId) => {
         try{
-            const response = await axios.delete(`http://localhost:8000/tags/deleteTag/${tagId}?userId=${user._id}`);
-            if(response.data === 'success'){
+            console.log("New Tags prop in TagsList:", tags)
+            const response = await axios.delete(`http://localhost:8000/tags/deleteTag/${tagId}?userId=${user.userId}`);
+            if(response.data.success){
                 const updatedTagList = tags.filter((tag) => tag._id !== tagId);
                 setTags(updatedTagList);
-                console.log(response.data);
             }
             else if(response.data === 'Error: Unauthorized to delete the tag'){
                 alert('Error: Unauthorized to delete the tag');
@@ -71,14 +26,40 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user}){
         catch(err){
             console.error('Error deleting tag:', err);
             if (err.response) {
-              // Handle errors sent back from the server
-              alert(err.response.data.message);
             } else {
               alert('Error deleting tag');
             }
         }   
-        
     }
+
+    useEffect(() => {
+        const fetchQuestionsCount = async () => {
+            const counts = await Promise.all(newTags.map(async (tag) => {
+                const response = await axios.get(`http://localhost:8000/tag_id/${tag._id}/questions`);
+                return { [tag._id]: response.data.length };
+            }));
+            
+            setQuestionCounts(counts.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
+        };
+
+        fetchQuestionsCount();
+    }, [tags]);
+
+
+    const handleClick = async (tagId) => {
+        try {
+          const response = await axios.get(`http://localhost:8000/tag_id/${tagId}/questions`);
+          const updatedQuestions = { ...questions };
+    
+          response.data.forEach((question) => {
+            updatedQuestions[question._id] = question;
+          });
+          setquestions(updatedQuestions);
+          updatePage("questionList", response.data);
+        } catch (error) {
+          console.error('Error fetching questions for tag:', error);
+        }
+      };    
 
     return(
         <div className="tagsPage">
@@ -90,23 +71,23 @@ function TagsList({newTags, updatePage, answerPage, isAuthQ, user}){
 
             <div id="tagList" className="tag-container">
                 
-                {newTags.map((tagEntry) =>
+                {tags.length !== 0 ? (tags.map((tagEntry) => (
                      <div className="tagBox" key={tagEntry._id}>
                         <button className="link-style-button" onClick={() => {handleClick(tagEntry._id)}}>
                         {tagEntry.name}
                 </button>
                 <div>{questionCounts[tagEntry._id]} Questions </div>
             
-                {(tagEntry.created_by === user._id || user.isAdmin ) && 
+                {(tagEntry.created_by === (user ? user.userId : null) && isAuthQ) && 
                     (<div>
-                        <button className='editButton' onClick={() => updatePage('tagsForm', tags, tagEntry)}>Edit</button>
+                        <button className='editButton' onClick={() => updatePage('tagsForm', null, tagEntry)}>Edit</button>
                         <button className='deleteButton' onClick={() => {handleDeleteClick(tagEntry._id)}}>Delete</button>
                     </div>)
                 }
-                
              </div>
                     
-                )}
+                ))) : 
+                <h1>No Tags Found</h1>}
             </div>  
         </div>
     );

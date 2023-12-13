@@ -346,7 +346,7 @@ label{
   cursor: pointer;
   border-radius: 15px;
 }
-.editButton{
+.editButton, .confirmButton{
   background-color: green;
   color: white;
   font-size: 20px;
@@ -385,4 +385,9 @@ label{
 .answerText{
   font-size: 25px;
   font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.warningMessage{
+  border-style: dotted;
+  padding: 10px;
 }

@@ -8,7 +8,6 @@ function SignIn({ onSignInSuccess }) {
   const [error, setError] = useState('');
   const [redirectToFakeStackOverflow, setRedirectToFakeStackOverflow] = useState(false);
   const [user, setUser] = useState(null);
-  let isMounted = true;
 
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,38 +27,29 @@ function SignIn({ onSignInSuccess }) {
         password,
       }, { withCredentials: true });
 
-      // if (isMounted) {
         if (response.data.success) {
-          // Assuming response.data.user contains session info
-          setUser(response.data.user);
-          // setRedirectToFakeStackOverflow(true);
-          onSignInSuccess(response.data.user);
+          setUser(response.data.sessionUser);
+          console.log(response.data.sessionUser)
+          setRedirectToFakeStackOverflow(true);
+          onSignInSuccess(response.data.sessionUser);
         } else {
           setError(response.data.message || 'Invalid credentials');
         }
-      //}
+    
     } catch (error) {
-      //if (isMounted) {
         if (error.response) {
           console.error('Error response:', error.response.data);
           setError(error.response.data.message || 'Invalid credentials');
         } else {
           setError('Error during sign-in. Please try again.');
         }
-      //}
     }
   };
-
-  // useEffect(() => {
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, []); 
 
   if (redirectToFakeStackOverflow) {
     return <MainPage username={user} />;
   }
-
+  
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Sign In</h2>

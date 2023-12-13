@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import SignIn from './SignIn'; 
 import axios from 'axios';
 
-function SignUp({ onAuthAccess, onSignInSuccess}){
+function SignUp({onAuthAccess, onSignInSuccess}){
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +35,6 @@ function SignUp({ onAuthAccess, onSignInSuccess}){
       return;
     }
 
-    
     try {
       const response = await axios.post('http://localhost:8000/signup', {
         username,
@@ -44,11 +43,11 @@ function SignUp({ onAuthAccess, onSignInSuccess}){
         isAdmin: false
       });
       if (response.data.success) {
+        setRedirectToLogin(true);
         console.log('Sign Up successful!');
         onAuthAccess(response.data.user)
-        setRedirectToLogin(true);
         onSignInSuccess();
-      } else {
+  } else {
         setErrors([response.data.message] ||  'Username Taken/Email Already in Use');
       }
     } 
@@ -62,10 +61,6 @@ function SignUp({ onAuthAccess, onSignInSuccess}){
     }
     }
   };
-  
-  if (redirectToLogin) {
-    return <SignIn onSignInSuccess={onAuthAccess}/>;
-  }
 
   return (
     <div style={styles.container}>

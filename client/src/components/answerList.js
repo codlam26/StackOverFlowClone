@@ -36,12 +36,13 @@ function formatQuestionDate(askDate2){
          }
        }
 
-function AnswerList({updatePage, question_id, isAuthQ, user}){
+function AnswerList({updatePage, question_id, isAuthQ, user, userId}){
     const [answers, setAnswers] = useState([]);
     const [question, setquestion] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [tags, setTags] = useState([]);
     const [usernames, setUsernames] = useState({});
+    const [user2, setUser]= useState({});
     const [questionUsernames, setQuestionUsernames] = useState({});
     const [votes, setVotes] = useState({});
     const answersPerPage = 5;
@@ -59,12 +60,6 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
         });
     }, [question_id])
 
-    useEffect( ()=>{
-        axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
-            setquestion(res.data);
-        });
-    }, [question_id])
-    
     useEffect(() => {
         const fetchUsernames = async () => {
             const usernamesObj = {};
@@ -84,7 +79,21 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
         };
   
         fetchUsernames();
-    }, []);
+    }, [question, answers]);
+
+    useEffect(() => {
+        axios.get(`http://localhost:8000/users/getUser/${userId}`).then((response) => {
+            console.log(response.data);
+            setUser(response.data)
+        });
+    }, [userId]);
+
+    useEffect( ()=>{
+        axios.get(`http://localhost:8000/api/questions/${question_id}`).then((res) => {
+            setquestion(res.data);
+        });
+    }, [question_id])
+    
 
     const renderTextWithHyperlinks = (text) => {
         return text.split(/(\[.*?\]\(.*?\))/g).map((part, index) => {
@@ -95,7 +104,7 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
 
     const handleVote = async (answerId, voteType) => {
         try{
-            const userId = user;
+            const userId = user.userId;
             const response = await axios.patch(`http://localhost:8000/answers/incrementvotes/${answerId}`,{
             userId, voteType
             });
@@ -140,7 +149,6 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
     }
 
     return(
-        
         <div className="answer-list">
             <div className ="answerHeader">
                 <div className="flex-container">
@@ -195,7 +203,7 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
             </div>            
             </div>
             
-            {currentAnswers.map((answerEntry) => (
+            {currentAnswers.length !== 0 ? (currentAnswers.map((answerEntry) => (
                 <div key={answerEntry.aid} className="answer-entry">
                     {isAuthQ && (<div className="left-column2">
                     
@@ -219,7 +227,7 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
                                 {usernames[answerEntry.ans_by]}
                             </span> answered {formatQuestionDate(answerEntry.ans_date_time)}
                         </div>
-                        {answerEntry.ans_by === user._id && (
+                        {answerEntry.ans_by === user2._id && (
                             <span>
                                 <button className='editButton' onClick = {() => {updatePage("answerForm", question_id, answerEntry)}}>Edit</button>
                                 <button className='deleteButton' onClick = {() => {handleDeleteClick(answerEntry._id)}}>Delete</button>
@@ -229,7 +237,8 @@ function AnswerList({updatePage, question_id, isAuthQ, user}){
                     
                     </div>
                 </div>
-            ))}
+            ))) : 
+            <h1>No Answers Found</h1>}
             
             {isAuthQ && (<button id="answerQuestionButton" onClick = {() => {updatePage("answerForm", question_id)}}>Answer Question</button>)}
             

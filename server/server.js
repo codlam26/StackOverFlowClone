@@ -144,7 +144,7 @@ app.put('/tags/editTag/:tagId', async (req, res) => {
   
     const questionUsingTag = await Question.find({ tags: tag_id }).exec();
     for (let i = 0; i < questionUsingTag.length; i++) {
-      if (questionUsingTag[i].asked_by.toString() !== tagObj[0].created_by.toString()) {
+      if (questionUsingTag[i].asked_by.toString() !== tagObj[0].created_by.toString() && !user.isAdmin) {
         res.send('Error another user is using this tag');
         return;
       }
@@ -163,20 +163,19 @@ app.delete('/tags/deleteTag/:tagId', async (req, res) => {
   try {
     const tagId = req.params.tagId;
     const userId = req.query.userId; 
-    // const user = await User.findById(userId).exec();
     const Tag = await Tags.findById(tagId).exec();
+    const user = await User.findById(userId).exec();
     if (!Tag) {
       return res.status(404).send('Tag not found');
     }
-    console.log(userId);
-    if (Tag.created_by.toString() !== userId.toString()) {
+    if (Tag.created_by.toString() !== userId.toString() && !user.isAdmin) {
       res.status(403).send('Error: Unauthorized to delete the tag');
       return;
     }
 
     const questionUsingTag = await Question.find({ tags: tagId }).exec();
     for (let i = 0; i < questionUsingTag.length; i++) {
-      if (questionUsingTag[i].asked_by.toString() !== Tag.created_by.toString()) {
+      if (questionUsingTag[i].asked_by.toString() !== Tag.created_by.toString() && !user.isAdmin) {
         res.send('Error: Another user is using this tag');
         return;
       }
@@ -486,6 +485,7 @@ async function incrementViews(questionId) {
       const question = await Question.findById(req.params.question_id);
       const {userId, voteType} = req.body;
       const user = await User.findById(userId);
+      console.log(user);
       if(!user || user.reputation < 50){
         return res.status(403).send('User cannot vote, low reputation')
       }
@@ -571,15 +571,17 @@ async function incrementViews(questionId) {
 
    app.post('/api/questions/askQuestion', async (req, res) => {
     const {title, summary, text, tags, username } = req.body;
-    if (!title || !summary|| !text || !tags || !username) {
+    if (!title || !summary|| !text || !tags) {
       return res.status(400).json({ error: 'All fields are required' });
     }
-    if(username.reputation < 50){
+    
+    const user = await User.findById(username);
+    if(user.reputation < 50){
       res.send({ error: true, message: 'User must have at least 50 reputation points to create a new tag.' });
       return;
     }
     try {
-      const result = await addNewQuestion(title, summary, text, tags, username);
+      const result = await addNewQuestion(title, summary, text, tags, user._id);
   
       if (result) {
         res.status(201).json({ message: 'Question added successfully' });
@@ -701,12 +703,16 @@ async function incrementViews(questionId) {
   }
   })
 
-  app.post('/postComments', async (req, res) => {
+  app.post('/postComments/', async (req, res) => {
     try{
       const {text, userId, id, commentType} = req.body;
       // let newCommentInput = req.body;
       // newCommentInput.created_by = req.session.user.user_id;
       const user = await User.findById(userId).exec();
+      if(!user){
+        res.send("No User found");
+        return;
+      }
       if(user.reputation < 50){
         res.send('User reputation is too low');
         return; 
@@ -717,32 +723,24 @@ async function incrementViews(questionId) {
       }
       const newComment = new Comments({
           text: text,
-          created_by: user,
+          created_by: user._id,
       })
       await newComment.save();
 
-      if(commentType === 'answer'){
-        const answer = await Answers.findById(id).exec();
-        await addCommentToAnswers(answer, newComment)
-      }
-      if(commentType === 'question'){
-        const question = await Question.findById(id).exec();
-        await addCommentToQuestions(question, newComment)
-      }
+      let parentComment = commentType === 'answer' ? await Answers.findById(id) : await Question.findById(id);
+        if (!parentComment) {
+            return res.status(404).json({ success: false, message: "Parent document not found" });
+        }
+
+        parentComment.comments.push(newComment);
+        await parentComment.save();
+
+        res.json({ success: true, message: "Comment posted successfully", comment: newComment });
     }
     catch(error){
       console.error("Comment cannot be posted:", error)
     }
   })
-
-  async function addCommentToAnswers(answer, comment){
-    answer.comments.push(comment);
-    await answer.save();
-  }
-  async function addCommentToQuestions(question, comment){
-    question.comments.push(comment);
-    await question.save();
-  }
 
   app.patch('/comments/incrementvotes/:comment_id', async (req, res) => {
     try{
@@ -822,7 +820,8 @@ async function incrementViews(questionId) {
           isAdmin: user.isAdmin,
         };
         req.session.user = sessionUser;
-        res.json({ success: true, message: 'Login successful', user});
+        console.log(sessionUser);
+        res.json({ success: true, message: 'Login successful', sessionUser});
         return;
       } else {
         res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -874,6 +873,19 @@ async function incrementViews(questionId) {
       res.send('Internal Server Error'); 
     }
   });
+
+  app.get('/users/getUser/:userId', async (req, res) => {
+    try{
+      const user = await User.findById(req.params.userId).exec();
+      user.password = undefined;
+      res.send(user);
+    }
+    catch(err){
+      console.error('Internal server Error');
+      res.send("Internal server Error");
+    }
+  });
+
 
   app.delete('/users/deleteUser/:id', async (req, res) => {
     // if(!req.session.user.isAdmin){
