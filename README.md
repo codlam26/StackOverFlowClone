@@ -46,6 +46,7 @@ Password: password123
 Cody Lam:
 - Created the init.js
 - Created the admin and user Page
+- Created the backend/frontend for the Users
 - Created the backend/frontend for delete && put && get endpoints for Question, Tags, and Answers
 - Created the backend/frontend of comments
 ```
