@@ -50,3 +50,17 @@ Cody Lam:
 - Created the backend/frontend of comments
 ```
 ## Team Member 2 Contribution
+```
+Shashwat Panigrahi:
+- Welcome Page
+- Sign In
+- Sign Up
+- Guest User 
+- Sign Out
+- Added variations in the main page for different types of users
+- Pagination 
+- Cookies and Sessions
+- Upvotes and Downvotes
+- Front End and Back end for all the features
+```
+
