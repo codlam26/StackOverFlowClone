@@ -61,5 +61,6 @@ Shashwat Panigrahi:
 - Pagination 
 - Cookies and Sessions
 - Upvotes and Downvotes
+- UML diagram
 ```
 
